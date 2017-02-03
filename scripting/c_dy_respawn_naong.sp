@@ -5316,15 +5316,15 @@ String:GetHeightString(Float:fClientPosition[3], Float:fTargetPosition[3])
     
     if (fClientPosition[2]+64 < fTargetPosition[2])
     {
-        s = "ABOVE";
+        s = "上方";
     }
     else if (fClientPosition[2]-64 > fTargetPosition[2])
     {
-        s = "BELOW";
+        s = "下方";
     }
     else
     {
-        s = "LEVEL";
+        s = "水平";
     }
     
     return s;
