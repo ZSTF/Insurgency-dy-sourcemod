@@ -1446,7 +1446,7 @@ void RespawnPlayer(client, target)
 	if(IsClientInGame(target) && !IsClientTimingOut(target) && g_client_last_classstring[target][0] && playerPickSquad[target] == 1 && !IsPlayerAlive(target) && team == TEAM_1)
 	{
 		// Write a log
-		LogAction(client, target, "\"%L\" respawned \"%L\"", client, target);
+		LogAction(client, target, "\"%L\" 复活了 \"%L\"", client, target);
 		
 		// Call forcerespawn fucntion
 		SDKCall(g_hForceRespawn, target);
@@ -1511,17 +1511,17 @@ public Action:Timer_PlayerStatus(Handle:Timer)
 				// Player connected or changed squad
 				if (g_iHurtFatal[client] == -1)
 				{
-					PrintCenterText(client, "You changed your role in the squad. You can no longer be revived and must wait til next respawn!");
+					PrintCenterText(client, "你更换了职业。请等待下次集体复活。");
 				}
 
 				new String:woundType[128];
-				woundType = "WOUNDED";
+				woundType = "伤害";
 				if (g_playerWoundType[client] == 0)
-					woundType = "MINORLY WOUNDED";
+					woundType = "轻伤";
 				else if (g_playerWoundType[client] == 1)
-					woundType = "MODERATELY WOUNDED";
+					woundType = "中度伤";
 				else if (g_playerWoundType[client] == 2)
-					woundType = "CRITCALLY WOUNDED";
+					woundType = "重伤";
 
 				if (!g_iCvar_respawn_enable || g_iRespawnCount[2] == -1 || g_iSpawnTokens[client] <= 0)
 				{
@@ -1529,21 +1529,21 @@ public Action:Timer_PlayerStatus(Handle:Timer)
 					if (g_iHurtFatal[client] == 1)
 					{
 						decl String:fatal_hint[255];
-						Format(fatal_hint, 255,"You were fatally killed for %i damage and must wait til next objective to spawn (out of lives)", g_clientDamageDone[client]);
+						Format(fatal_hint, 255,"你死于 %i 点致命伤害，请等待下次集体复活（余命耗尽）", g_clientDamageDone[client]);
 						PrintCenterText(client, "%s", fatal_hint);
 					}
 					// Player was killed
 					else if (g_iHurtFatal[client] == 0 && !Ins_InCounterAttack())
 					{
 						decl String:wound_hint[255];
-						Format(wound_hint, 255,"[You're %s for %d damage]..wait patiently for a medic..do NOT mic/chat spam! (out of lives)", woundType, g_clientDamageDone[client]);
+						Format(wound_hint, 255,"你因 %d 点伤害受到 %s，请耐心等待医疗兵救援（余命耗尽）", g_clientDamageDone[client], woundType, woundType, g_clientDamageDone[client]);
 						PrintCenterText(client, "%s", wound_hint);
 					}
 					// Player was killed during counter attack
 					else if (g_iHurtFatal[client] == 0 && Ins_InCounterAttack())
 					{
 						decl String:wound_hint[255];
-						Format(wound_hint, 255,"You're %s during a Counter-Attack for %d damage..if its close to ending..dont bother asking for a medic! (out of lives)", woundType, g_clientDamageDone[client]);
+						Format(wound_hint, 255,"你在敌军反攻中因 %d 点伤害受到 %s，如果游戏即将结束，请勿呼叫医疗兵（余命耗尽）", g_clientDamageDone[client], woundType);
 						PrintCenterText(client, "%s", wound_hint);
 					}
 				}
@@ -1570,8 +1570,8 @@ public Action:Timer_Enemies_Remaining(Handle:Timer)
 	// Announce
 	decl String:textToPrintChat[64];
 	decl String:textToPrint[64];
-	Format(textToPrintChat, sizeof(textToPrintChat), "Enemies alive: %d | Enemy reinforcements remaining: %d", alive_insurgents, g_iRemaining_lives_team_ins);
-	Format(textToPrint, sizeof(textToPrint), "Enemies alive: %d | Enemy reinforcements remaining: %d", alive_insurgents ,g_iRemaining_lives_team_ins);
+	Format(textToPrintChat, sizeof(textToPrintChat), "敌军存活：%d | 敌军剩余增援：%d", alive_insurgents, g_iRemaining_lives_team_ins);
+	Format(textToPrint, sizeof(textToPrint), "敌军存活：%d | 敌军剩余增援：%d", alive_insurgents ,g_iRemaining_lives_team_ins);
 	PrintHintTextToAll(textToPrint);
 	PrintToChatAll(textToPrintChat);
 	
@@ -1600,11 +1600,11 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 		{
 			decl String:textToPrintChat[64];
 			decl String:textToPrint[64];
-			Format(textToPrintChat, sizeof(textToPrintChat), "Friendlies spawn on Counter-Attacks, Capture the Point!");
+			Format(textToPrintChat, sizeof(textToPrintChat), "队友将在完成检查点后复活，尽快完成检查点");
 			if (g_isHunt == 1)
-				Format(textToPrint, sizeof(textToPrint), "Enemies reinforce in %d seconds | Kill remaining/blow cache!", g_iReinforceTime);
+				Format(textToPrint, sizeof(textToPrint), "敌军增援将在 %d 秒后到达 | 尽快完成检查点", g_iReinforceTime);
 			else
-				Format(textToPrint, sizeof(textToPrint), "Enemies reinforce in %d seconds | Capture the point soon!", g_iReinforceTime);
+				Format(textToPrint, sizeof(textToPrint), "敌军增援将在 %d 秒后到达 | 尽快完成检查点", g_iReinforceTime);
 
 			PrintHintTextToAll(textToPrint);
 			if (g_iReinforceTime <= 60)
@@ -1617,11 +1617,11 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 		{
 			decl String:textToPrintChat[64];
 			decl String:textToPrint[64];
-			Format(textToPrintChat, sizeof(textToPrintChat), "Friendlies spawn on Counter-Attacks, Capture the Point!");
+			Format(textToPrintChat, sizeof(textToPrintChat), "队友将在完成检查点后复活，尽快完成检查点");
 			if (g_isHunt == 1)
-				Format(textToPrint, sizeof(textToPrint), "Enemies reinforce in %d seconds | Kill remaining/blow cache!", g_iReinforceTime);
+				Format(textToPrint, sizeof(textToPrint), "敌军增援将在 %d 秒后到达 | 尽快完成检查点", g_iReinforceTime);
 			else
-				Format(textToPrint, sizeof(textToPrint), "Enemies reinforce in %d seconds | Capture the point soon!", g_iReinforceTime);
+				Format(textToPrint, sizeof(textToPrint), "敌军增援将在 %d 秒后到达 | 尽快完成检查点", g_iReinforceTime);
 
 			PrintHintTextToAll(textToPrint);
 			//PrintToChatAll(textToPrintChat);
@@ -1641,7 +1641,7 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 					new iBotCount = GetTeamInsCount();
 					// Add bots	
 					g_iRemaining_lives_team_ins = g_iRemaining_lives_team_ins + iBotCount;
-					Format(textToPrint, sizeof(textToPrint), "Enemy Reinforcements Added to Existing Reinforcements!");
+					Format(textToPrint, sizeof(textToPrint), "敌军增援已加强");
 					PrintHintTextToAll(textToPrint);
 					g_iReinforceTime = reinforce_time_subsequent;
 					if (g_isHunt == 1)
@@ -1666,7 +1666,7 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 				}
 				else
 				{
-					Format(textToPrint, sizeof(textToPrint), "Enemy Reinforcements at Maximum Capacity");
+					Format(textToPrint, sizeof(textToPrint), "敌军增援已到达最大值");
 					PrintHintTextToAll(textToPrint);
 
 					// Reset reinforce time
@@ -1704,7 +1704,7 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 				//new fRandomInt = GetRandomInt(1, 4);
 				
 				decl String:textToPrint[64];
-				Format(textToPrint, sizeof(textToPrint), "Enemy Reinforcements Have Arrived!");
+				Format(textToPrint, sizeof(textToPrint), "敌军增援已到达");
 				PrintHintTextToAll(textToPrint);
 			}
 		}
@@ -3170,8 +3170,8 @@ public Action:Event_ObjectDestroyed(Handle:event, const String:name[], bool:dont
 	{
 		g_huntCacheDestroyed = true;
 		//g_iReinforceTime = g_iReinforceTime + g_huntReinforceCacheAdd;
-		PrintHintTextToAll("Cache destroyed! Kill all enemies and reinforcements to win!");
-		PrintToChatAll("Cache destroyed! Kill all enemies and reinforcements to win!");
+		PrintHintTextToAll("军备已摧毁，清除剩余敌人夺取胜利");
+		PrintToChatAll("军备已摧毁，清除剩余敌人夺取胜利");
 		
 	}
 	// Checkpoint
@@ -3454,23 +3454,23 @@ public Action:Event_PlayerPickSquad_Post( Handle:event, const String:name[], boo
 	{
 		// Admin medic
 		if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			Format(sNewNickname, sizeof(sNewNickname), "[ADMIN][MEDIC] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[管理][医疗] %s", g_client_org_nickname[client]);
 		// Donor medic
 		else if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_RESERVATION))
-			Format(sNewNickname, sizeof(sNewNickname), "[DONOR][MEDIC] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[会员][医疗] %s", g_client_org_nickname[client]);
 		// Normal medic
 		else
-			Format(sNewNickname, sizeof(sNewNickname), "[MEDIC] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[医疗] %s", g_client_org_nickname[client]);
 	}
 	// Normal class
 	else
 	{
 		// Admin
 		if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			Format(sNewNickname, sizeof(sNewNickname), "[ADMIN] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[管理] %s", g_client_org_nickname[client]);
 		// Donor
 		else if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_RESERVATION))
-			Format(sNewNickname, sizeof(sNewNickname), "[DONOR] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[会员] %s", g_client_org_nickname[client]);
 		// Normal player
 		else
 			Format(sNewNickname, sizeof(sNewNickname), "%s", g_client_org_nickname[client]);
@@ -3807,7 +3807,7 @@ public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 					{
 						// Cannot respawn anymore
 						decl String:sChat[128];
-						Format(sChat, 128,"You cannot be respawned anymore. (out of lives)");
+						Format(sChat, 128,"你不能被复活了（余命耗尽）");
 						PrintToChat(client, "%s", sChat);
 					}
 				}
@@ -3846,7 +3846,7 @@ public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 				{
 					// Cannot respawn anymore
 					decl String:sChat[128];
-					Format(sChat, 128,"You cannot be respawned anymore. (out of lives)");
+					Format(sChat, 128,"你不能被复活了（余命耗尽）");
 					PrintToChat(client, "%s", sChat);
 				}
 			}
@@ -3861,7 +3861,7 @@ public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 				{
 					// Cannot respawn anymore
 					decl String:sChat[128];
-					Format(sChat, 128,"You cannot be respawned anymore. (out of team lives)");
+					Format(sChat, 128,"你不能被复活了（余命耗尽）");
 					PrintToChat(client, "%s", sChat);
 				}
 			}
@@ -3878,31 +3878,31 @@ public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 	decl String:fatal_hint[64];
 	decl String:woundType[64];
 	if (g_playerWoundType[client] == 0)
-		woundType = "MINORLY WOUNDED";
+		woundType = "轻伤";
 	else if (g_playerWoundType[client] == 1)
-		woundType = "MODERATELY WOUNDED";
+		woundType = "中度伤";
 	else if (g_playerWoundType[client] == 2)
-		woundType = "CRITCALLY WOUNDED";
+		woundType = "重伤";
 	
 	// Display death message
 	if (g_fCvar_fatal_chance > 0.0)
 	{
 		if (g_iHurtFatal[client] == 1 && !IsFakeClient(client))
 		{
-			Format(fatal_hint, 255,"You were fatally killed for %i damage", g_clientDamageDone[client]);
+			Format(fatal_hint, 255,"你死于 %i 点致命伤害", g_clientDamageDone[client]);
 			PrintHintText(client, "%s", fatal_hint);
 			PrintToChat(client, "%s", fatal_hint);
 		}
 		else
 		{
-			Format(wound_hint, 255,"You're %s for %i damage, call a medic for revive!", woundType, g_clientDamageDone[client]);
+			Format(wound_hint, 255,"你因 %i 点伤害受到 %s ，请等待医疗兵的救援", g_clientDamageDone[client], woundType);
 			PrintHintText(client, "%s", wound_hint);
 			PrintToChat(client, "%s", wound_hint);
 		}
 	}
 	else
 	{
-		Format(wound_hint, 255,"You're %s for %i damage, call a medic for revive!", woundType, g_clientDamageDone[client]);
+		Format(wound_hint, 255,"你因 %i 点伤害受到 %s ，请等待医疗兵的救援", g_clientDamageDone[client], woundType);
 		PrintHintText(client, "%s", wound_hint);
 		PrintToChat(client, "%s", wound_hint);
 	}
@@ -4260,7 +4260,7 @@ public Action:Timer_PlayerRespawn(Handle:Timer, any:client)
 				if (!IsFakeClient(client))
 				{
 					decl String:sRemainingTime[256];
-					Format(sRemainingTime, sizeof(sRemainingTime),"This is your first time joining.  You will be respawned in %d second%s (%d lives left) ", g_iRespawnTimeRemaining[client], (g_iRespawnTimeRemaining[client] > 1 ? "s" : ""), g_iSpawnTokens[client]);
+					Format(sRemainingTime, sizeof(sRemainingTime),"这是你首次加入游戏，你将在 %d 秒后复活（剩余生命：%d）", g_iRespawnTimeRemaining[client], g_iSpawnTokens[client]);
 					PrintCenterText(client, sRemainingTime);
 				}
 			}
@@ -4269,23 +4269,23 @@ public Action:Timer_PlayerRespawn(Handle:Timer, any:client)
 				new String:woundType[128];
 				if (g_iHurtFatal[client] == 1)
 				{
-					woundType = "fatally killed";
+					woundType = "致命伤";
 				}
 				else
 				{
-					woundType = "WOUNDED";
+					woundType = "伤害";
 					if (g_playerWoundType[client] == 0)
-						woundType = "MINORLY WOUNDED";
+						woundType = "轻伤";
 					else if (g_playerWoundType[client] == 1)
-						woundType = "MODERATELY WOUNDED";
+						woundType = "中度伤";
 					else if (g_playerWoundType[client] == 2)
-						woundType = "CRITCALLY WOUNDED";
+						woundType = "重伤";
 				}
 				// Print remaining time to center text area
 				if (!IsFakeClient(client))
 				{
 					decl String:sRemainingTime[256];
-					Format(sRemainingTime, sizeof(sRemainingTime),"[You're %s for %d damage]..wait patiently for a medic..do NOT mic/chat spam!\n\n                You will be respawned in %d second%s (%d lives left) ", woundType, g_clientDamageDone[client], g_iRespawnTimeRemaining[client], (g_iRespawnTimeRemaining[client] > 1 ? "s" : ""), g_iSpawnTokens[client]);
+					Format(sRemainingTime, sizeof(sRemainingTime),"你因 %d 点伤害受到了 %s，耐心等待医疗兵的救援\n\n或者等待 %d 秒后复活（剩余生命：%d）", g_clientDamageDone[client], woundType, g_iRespawnTimeRemaining[client], g_iSpawnTokens[client]);
 					PrintCenterText(client, sRemainingTime);
 				}
 			}
@@ -4306,7 +4306,7 @@ public Action:Timer_PlayerRespawn(Handle:Timer, any:client)
 			
 			// Print remaining time to center text area
 			if (!IsFakeClient(client))
-				PrintCenterText(client, "You are respawned! (%d lives left)", g_iSpawnTokens[client]);
+				PrintCenterText(client, "你已复活（剩余生命：%d）", g_iSpawnTokens[client]);
 			
 			// Get ragdoll position
 			new playerRag = EntRefToEntIndex(g_iClientRagdolls[client]);
@@ -4320,7 +4320,7 @@ public Action:Timer_PlayerRespawn(Handle:Timer, any:client)
 			RespawnPlayerPost(INVALID_HANDLE, client);
 			
 			// Announce respawn
-			PrintToChatAll("\x05%N\x01 is respawned..", client);
+			PrintToChatAll("\x05%N\x01 已复活", client);
 			
 			// Reset variable
 			g_iPlayerRespawnTimerActive[client] = 0;
@@ -4420,18 +4420,18 @@ public Action:Timer_ReviveMonitor(Handle:timer, any:data)
 
 						decl String:woundType[64];
 						if (g_playerWoundType[iInjured] == 0)
-							woundType = "Minor wound";
+							woundType = "轻伤";
 						else if (g_playerWoundType[iInjured] == 1)
-							woundType = "Moderate wound";
+							woundType = "中度伤";
 						else if (g_playerWoundType[iInjured] == 2)
-							woundType = "Critical wound";
+							woundType = "重伤";
 
 						// Hint to iMedic
-						Format(sBuf, 255,"Reviving %N in: %i seconds (%s)", iInjured, g_iReviveRemainingTime[iInjured], woundType);
+						Format(sBuf, 255,"救援 %N ，还剩 %i 秒（%s）", iInjured, g_iReviveRemainingTime[iInjured], woundType);
 						PrintHintText(iMedic, "%s", sBuf);
 						
 						// Hint to victim
-						Format(sBuf, 255,"%N is reviving you in: %i seconds (%s)", iMedic, g_iReviveRemainingTime[iInjured], woundType);
+						Format(sBuf, 255,"%N 正在救你 ，还剩 %i 秒（%s）", iMedic, g_iReviveRemainingTime[iInjured], woundType);
 						PrintHintText(iInjured, "%s", sBuf);
 						
 						// Decrease revive remaining time
@@ -4445,22 +4445,22 @@ public Action:Timer_ReviveMonitor(Handle:timer, any:data)
 					{	
 						decl String:woundType[64];
 						if (g_playerWoundType[iInjured] == 0)
-							woundType = "minor wound";
+							woundType = "轻伤";
 						else if (g_playerWoundType[iInjured] == 1)
-							woundType = "moderate wound";
+							woundType = "中度伤";
 						else if (g_playerWoundType[iInjured] == 2)
-							woundType = "critical wound";
+							woundType = "重伤";
 
 						// Chat to all
-						Format(sBuf, 255,"\x05%N\x01 revived \x03%N from a %s", iMedic, iInjured, woundType);
+						Format(sBuf, 255,"\x05%N\x01 救起了 %s 的 \x03%N", iMedic, woundType, iInjured);
 						PrintToChatAll("%s", sBuf);
 						
 						// Hint to iMedic
-						Format(sBuf, 255,"You revived %N from a %s", iInjured, woundType);
+						Format(sBuf, 255,"你救起了 %s 的 %N", woundType, iInjured);
 						PrintHintText(iMedic, "%s", sBuf);
 						
 						// Hint to victim
-						Format(sBuf, 255,"%N revived you from a %s", iMedic, woundType);
+						Format(sBuf, 255,"%N 救起了 %s 的你", iMedic, woundType);
 						PrintHintText(iInjured, "%s", sBuf);
 						
 						// Add kill bonus to iMedic
@@ -4480,10 +4480,7 @@ public Action:Timer_ReviveMonitor(Handle:timer, any:data)
 						SetPlayerScore(iMedic, iScore + 10);
 
 						decl String:sBuf2[255];
-						if (iBonus > 1)
-							Format(sBuf2, 255,"Awarded %i kills and %i score for revive", iBonus, 10);
-						else
-							Format(sBuf2, 255,"Awarded %i kill and %i score for revive", iBonus, 10);
+						Format(sBuf2, 255,"你因治疗获得了 %i 点击杀和 %i 点分数奖励", iBonus, 10);
 						
 						PrintToChat(iMedic, "%s", sBuf2);
 
@@ -4569,17 +4566,17 @@ public Action:Timer_ReviveMonitor(Handle:timer, any:data)
 						{
 							decl String:woundType[64];
 							if (g_playerWoundType[iInjured] == 0)
-								woundType = "Minor wound";
+								woundType = "轻伤";
 							else if (g_playerWoundType[iInjured] == 1)
-								woundType = "Moderate wound";
+								woundType = "中度伤";
 							else if (g_playerWoundType[iInjured] == 2)
-								woundType = "Critical wound";
+								woundType = "重伤";
 							// Hint to NonMedic
-							Format(sBuf, 255,"Reviving %N in: %i seconds (%s)", iInjured, g_iReviveNonMedicRemainingTime[iInjured], woundType);
+							Format(sBuf, 255,"救援 %N ，还剩 %i 秒（%s）", iInjured, g_iReviveNonMedicRemainingTime[iInjured], woundType);
 							PrintHintText(iMedic, "%s", sBuf);
 							
 							// Hint to victim
-							Format(sBuf, 255,"%N is reviving you in: %i seconds (%s)", iMedic, g_iReviveNonMedicRemainingTime[iInjured], woundType);
+							Format(sBuf, 255,"%N 正在救你 ，还剩 %i 秒（%s）", iMedic, g_iReviveNonMedicRemainingTime[iInjured], woundType);
 							PrintHintText(iInjured, "%s", sBuf);
 							
 							// Decrease revive remaining time
@@ -4589,11 +4586,11 @@ public Action:Timer_ReviveMonitor(Handle:timer, any:data)
 						{
 							decl String:woundType[64];
 							if (g_playerWoundType[iInjured] == 1)
-								woundType = "moderately wounded";
+								woundType = "中度伤";
 							else if (g_playerWoundType[iInjured] == 2)
-								woundType = "critically wounded";
+								woundType = "重伤";
 							// Hint to NonMedic
-							Format(sBuf, 255,"%N is %s and can only be revived by a medic!", iInjured, woundType);
+							Format(sBuf, 255,"%N 受到了 %s，只有学医才能救他", iInjured, woundType);
 							PrintHintText(iMedic, "%s", sBuf);
 						}
 					}
@@ -4602,22 +4599,22 @@ public Action:Timer_ReviveMonitor(Handle:timer, any:data)
 					{	
 						decl String:woundType[64];
 						if (g_playerWoundType[iInjured] == 0)
-							woundType = "minor wound";
+							woundType = "轻伤";
 						else if (g_playerWoundType[iInjured] == 1)
-							woundType = "moderate wound";
+							woundType = "中度伤";
 						else if (g_playerWoundType[iInjured] == 2)
-							woundType = "critical wound";
+							woundType = "重伤";
 
 						// Chat to all
-						Format(sBuf, 255,"\x05%N\x01 revived \x03%N from a %s", iMedic, iInjured, woundType);
+						Format(sBuf, 255,"\x05%N\x01 救起了 %s 的 \x03%N", iMedic, woundType, iInjured);
 						PrintToChatAll("%s", sBuf);
 						
 						// Hint to iMedic
-						Format(sBuf, 255,"You revived %N from a %s", iInjured, woundType);
+						Format(sBuf, 255,"你救起了 %s 的 %N", woundType, iInjured);
 						PrintHintText(iMedic, "%s", sBuf);
 						
 						// Hint to victim
-						Format(sBuf, 255,"%N revived you from a %s", iMedic, woundType);
+						Format(sBuf, 255,"%N 救起了 %s 的你", iMedic, woundType);
 						PrintHintText(iInjured, "%s", sBuf);
 						
 						// Add kill bonus to iMedic
@@ -4638,10 +4635,7 @@ public Action:Timer_ReviveMonitor(Handle:timer, any:data)
 						SetPlayerScore(iMedic, iScore + 10);
 						
 						decl String:sBuf2[255];
-						if (iBonus > 1)
-							Format(sBuf2, 255,"Awarded %i kills and %i score for revive", iBonus, 10);
-						else
-							Format(sBuf2, 255,"Awarded %i kill and %i score for revive", iBonus, 10);
+						Format(sBuf2, 255,"你因治疗获得了 %i 点击杀和 %i 点分数奖励", iBonus, 10);
 						
 						PrintToChat(iMedic, "%s", sBuf2);
 
@@ -4745,10 +4739,7 @@ public Action:Timer_MedicMonitor(Handle:timer)
 							new iScore = GetClientFrags(medic) + iBonus;
 							SetEntProp(medic, Prop_Data, "m_iFrags", iScore);
 							decl String:sBuf2[255];
-							if (iBonus > 1)
-								Format(sBuf2, 255,"Awarded %i kills for healing %i in HP of other players.", iBonus, iHealthCap);
-							else
-								Format(sBuf2, 255,"Awarded %i kill for healing %i in HP of other players.", iBonus, iHealthCap);
+							Format(sBuf2, 255,"你因治疗了 %i 点生命获得了 %i 点击杀奖励", iHealthCap, iBonus);
 							
 							PrintToChat(medic, "%s", sBuf2);
 							////////////////////////
@@ -4762,16 +4753,16 @@ public Action:Timer_MedicMonitor(Handle:timer)
 						{
 							iHealth = 100;
 							//Client_PrintToChatAll(false, "{OG}%N{N} healed {OG}%N", medic, iTarget);
-							PrintToChatAll("\x05%N\x01 healed \x05%N", medic, iTarget);
-							PrintHintText(iTarget, "You were healed by %N (HP: %i)", medic, iHealth);
+							PrintToChatAll("\x05%N\x01 治疗了 \x05%N", medic, iTarget);
+							PrintHintText(iTarget, "你被 %N 治疗(HP: %i)", medic, iHealth);
 						}
 						else
 						{
-							PrintHintText(iTarget, "DON'T MOVE! %N is healing you.(HP: %i)", medic, iHealth);
+							PrintHintText(iTarget, "不要动，%N 正在治疗你(HP: %i)", medic, iHealth);
 						}
 						
 						SetEntityHealth(iTarget, iHealth);
-						PrintHintText(medic, "%N\nHP: %i\n\nHealing with paddles for: %i", iTarget, iHealth, g_iHeal_amount_paddles);
+						PrintHintText(medic, "%N\nHP: %i\n\n使用除颤器治疗: %i", iTarget, iHealth, g_iHeal_amount_paddles);
 					}
 					else
 					{
@@ -4793,10 +4784,7 @@ public Action:Timer_MedicMonitor(Handle:timer)
 							new iScore = GetClientFrags(medic) + iBonus;
 							SetEntProp(medic, Prop_Data, "m_iFrags", iScore);
 							decl String:sBuf2[255];
-							if (iBonus > 1)
-								Format(sBuf2, 255,"Awarded %i kills for healing %i in HP of other players.", iBonus, iHealthCap);
-							else
-								Format(sBuf2, 255,"Awarded %i kill for healing %i in HP of other players.", iBonus, iHealthCap);
+							Format(sBuf2, 255,"你因治疗了 %i 点生命获得了 %i 点击杀奖励", iHealthCap, iBonus);
 
 							PrintToChat(medic, "%s", sBuf2);
 							////////////////////////
@@ -4811,16 +4799,16 @@ public Action:Timer_MedicMonitor(Handle:timer)
 							iHealth = 100;
 							
 							//Client_PrintToChatAll(false, "{OG}%N{N} healed {OG}%N", medic, iTarget);
-							PrintToChatAll("\x05%N\x01 healed \x05%N", medic, iTarget);
-							PrintHintText(iTarget, "You were healed by %N (HP: %i)", medic, iHealth);
+							PrintToChatAll("\x05%N\x01 治疗了 \x05%N", medic, iTarget);
+							PrintHintText(iTarget, "你被 %N 治疗(HP: %i)", medic, iHealth);
 						}
 						else
 						{
-							PrintHintText(iTarget, "DON'T MOVE! %N is healing you.(HP: %i)", medic, iHealth);
+							PrintHintText(iTarget, "不要动，%N 正在治疗你(HP: %i)", medic, iHealth);
 						}
 						
 						SetEntityHealth(iTarget, iHealth);
-						PrintHintText(medic, "%N\nHP: %i\n\nHealing with medpack for: %i", iTarget, iHealth, g_iHeal_amount_medPack);
+						PrintHintText(medic, "%N\nHP: %i\n\n使用急救包治疗: %i", iTarget, iHealth, g_iHeal_amount_medPack);
 					}
 					else
 					{
@@ -4855,11 +4843,11 @@ public Action:Timer_MedicMonitor(Handle:timer)
 						if (iHealth >= g_medicHealSelf_max)
 						{
 							iHealth = g_medicHealSelf_max;
-							PrintHintText(medic, "You healed yourself (HP: %i) | MAX: %i", iHealth, g_medicHealSelf_max);
+							PrintHintText(medic, "你治疗了你自己 (HP: %i) | 最大: %i", iHealth, g_medicHealSelf_max);
 						}
 						else
 						{
-							PrintHintText(medic, "Healing Self (HP: %i) | MAX: %i", iHealth, g_medicHealSelf_max);
+							PrintHintText(medic, "自行治疗中 (HP: %i) | 最大: %i", iHealth, g_medicHealSelf_max);
 						}
 						SetEntityHealth(medic, iHealth);
 					}
@@ -4926,10 +4914,7 @@ public Action:Timer_MedicMonitor(Handle:timer)
 								new iScore = GetClientFrags(medic) + iBonus;
 								SetEntProp(medic, Prop_Data, "m_iFrags", iScore);
 								decl String:sBuf2[255];
-								if (iBonus > 1)
-									Format(sBuf2, 255,"Awarded %i kills for healing %i in HP of other players.", iBonus, iHealthCap);
-								else
-									Format(sBuf2, 255,"Awarded %i kill for healing %i in HP of other players.", iBonus, iHealthCap);
+								Format(sBuf2, 255,"你因治疗了 %i 点生命获得了 %i 点击杀奖励", iHealthCap, iBonus);
 								
 								PrintToChat(medic, "%s", sBuf2);
 								////////////////////////
@@ -4944,16 +4929,16 @@ public Action:Timer_MedicMonitor(Handle:timer)
 								iHealth = g_nonMedic_maxHealOther;
 								
 								//Client_PrintToChatAll(false, "{OG}%N{N} healed {OG}%N", medic, iTarget);
-								//PrintToChatAll("\x05%N\x01 healed \x05%N", medic, iTarget);
-								PrintHintText(iTarget, "Non-Medic %N can only heal you for %i HP!)", medic, iHealth);
+								//PrintToChatAll("\x05%N\x01 治疗了 \x05%N", medic, iTarget);
+								PrintHintText(iTarget, "非医疗兵 %N 只能治疗 %i 点生命", medic, iHealth);
 							}
 							else
 							{
-								PrintHintText(iTarget, "DON'T MOVE! %N is healing you.(HP: %i)", medic, iHealth);
+								PrintHintText(iTarget, "不要动，%N 正在治疗你(HP: %i)", medic, iHealth);
 							}
 							
 							SetEntityHealth(iTarget, iHealth);
-							PrintHintText(medic, "%N\nHP: %i\n\nHealing.", iTarget, iHealth);
+							PrintHintText(medic, "%N\nHP: %i\n\n治疗中", iTarget, iHealth);
 						}
 						else
 						{
@@ -4962,7 +4947,7 @@ public Action:Timer_MedicMonitor(Handle:timer)
 								PrintHintText(medic, "%N\nHP: %i", iTarget, iHealth);
 							}
 							else if (iHealth >= g_nonMedic_maxHealOther)
-								PrintHintText(medic, "%N\nHP: %i (MAX YOU CAN HEAL)", iTarget, iHealth);
+								PrintHintText(medic, "%N\nHP: %i (你只能治疗这么多了)", iTarget, iHealth);
 
 						}
 					}
@@ -4994,11 +4979,11 @@ public Action:Timer_MedicMonitor(Handle:timer)
 							if (iHealth >= g_nonMedicHealSelf_max)
 							{
 								iHealth = g_nonMedicHealSelf_max;
-								PrintHintText(medic, "You healed yourself (HP: %i) | MAX: %i", iHealth, g_nonMedicHealSelf_max);
+								PrintHintText(medic, "你治疗了你自己 (HP: %i) | 最大: %i", iHealth, g_nonMedicHealSelf_max);
 							}
 							else
 							{
-								PrintHintText(medic, "Healing Self (HP: %i) | MAX: %i", iHealth, g_nonMedicHealSelf_max);
+								PrintHintText(medic, "自行治疗中 (HP: %i) | 最大: %i", iHealth, g_nonMedicHealSelf_max);
 							}
 							
 							SetEntityHealth(medic, iHealth);
@@ -5151,7 +5136,7 @@ public Action:Timer_NearestBody(Handle:timer, any:data)
 				
 				// Print iNearestInjured dead body's distance and direction text
 				//PrintCenterText(medic, "Nearest dead: %N (%s)", iNearestInjured, sDistance);
-				PrintCenterText(medic, "Nearest dead: %N ( %s | %s | %s )", iNearestInjured, sDistance, sDirection, sHeight);
+				PrintCenterText(medic, "最近伤员：%N ( %s | %s | %s )", iNearestInjured, sDistance, sDirection, sHeight);
 				new Float:beamPos[3];
 				beamPos = fInjuredPosition;
 				beamPos[2] += 0.3;
@@ -5268,28 +5253,28 @@ String:GetDirectionString(Float:fClientAngles[3], Float:fClientPosition[3], Floa
 	// Now geht the direction
 	// Up
 	if (fDiff >= -22.5 && fDiff < 22.5)
-		Format(sDirection, sizeof(sDirection), "FWD");//"\xe2\x86\x91");
+		Format(sDirection, sizeof(sDirection), "前方");//"\xe2\x86\x91");
 	// right up
 	else if (fDiff >= 22.5 && fDiff < 67.5)
-		Format(sDirection, sizeof(sDirection), "FWD-RIGHT");//"\xe2\x86\x97");
+		Format(sDirection, sizeof(sDirection), "右前");//"\xe2\x86\x97");
 	// right
 	else if (fDiff >= 67.5 && fDiff < 112.5)
-		Format(sDirection, sizeof(sDirection), "RIGHT");//"\xe2\x86\x92");
+		Format(sDirection, sizeof(sDirection), "右侧");//"\xe2\x86\x92");
 	// right down
 	else if (fDiff >= 112.5 && fDiff < 157.5)
-		Format(sDirection, sizeof(sDirection), "BACK-RIGHT");//"\xe2\x86\x98");
+		Format(sDirection, sizeof(sDirection), "右后");//"\xe2\x86\x98");
 	// down
 	else if (fDiff >= 157.5 || fDiff < -157.5)
-		Format(sDirection, sizeof(sDirection), "BACK");//"\xe2\x86\x93");
+		Format(sDirection, sizeof(sDirection), "后方");//"\xe2\x86\x93");
 	// down left
 	else if (fDiff >= -157.5 && fDiff < -112.5)
-		Format(sDirection, sizeof(sDirection), "BACK-LEFT");//"\xe2\x86\x99");
+		Format(sDirection, sizeof(sDirection), "左后");//"\xe2\x86\x99");
 	// left
 	else if (fDiff >= -112.5 && fDiff < -67.5)
-		Format(sDirection, sizeof(sDirection), "LEFT");//"\xe2\x86\x90");
+		Format(sDirection, sizeof(sDirection), "左侧");//"\xe2\x86\x90");
 	// left up
 	else if (fDiff >= -67.5 && fDiff < -22.5)
-		Format(sDirection, sizeof(sDirection), "FWD-LEFT");//"\xe2\x86\x96");
+		Format(sDirection, sizeof(sDirection), "左前");//"\xe2\x86\x96");
 	
 	return sDirection;
 }
@@ -5307,12 +5292,12 @@ String:GetDistanceString(Float:fDistance)
 		fTempDistance = fTempDistance * 3.2808399;
 
 		// Feet
-		Format(sResult, sizeof(sResult), "%.0f feet", fTempDistance);
+		Format(sResult, sizeof(sResult), "%.0f 英尺", fTempDistance);
 	}
 	else
 	{
 		// Meter
-		Format(sResult, sizeof(sResult), "%.0f meter", fTempDistance);
+		Format(sResult, sizeof(sResult), "%.0f 米", fTempDistance);
 	}
 	
 	return sResult;
@@ -5379,7 +5364,7 @@ stock GetTeamSecCount() {
 				clients++;
 		}
 	}
-	return clients;
+	return clients > 18 ? 18 : clients;
 }
 
 // Get real client count
@@ -5634,8 +5619,8 @@ public LoadMySQLBase(Handle:owner, Handle:hndl, const String:error[], any:data)
 	SQL_TQuery(g_hDB, SQLErrorCheckCallback, sQuery);
 	
 	// Get 'last_active'
-	FormatEx(sQuery, sizeof(sQuery), "DELETE FROM ins_rank WHERE last_active <= %i", GetTime() - PLAYER_STATSOLD * 12 * 60 * 60);
-	SQL_TQuery(g_hDB, SQLErrorCheckCallback, sQuery);
+	//FormatEx(sQuery, sizeof(sQuery), "DELETE FROM ins_rank WHERE last_active <= %i", GetTime() - PLAYER_STATSOLD * 12 * 60 * 60);
+	//SQL_TQuery(g_hDB, SQLErrorCheckCallback, sQuery);
 }
 
 // Init Client
@@ -5686,7 +5671,7 @@ public Action:initPlayerBase(Handle:timer, any:client){
 	else
 	{
 		// Join message
-		PrintToChatAll("\x04%N\x01 joined the fight.", client);
+		PrintToChatAll("\x04%N\x01 加入了游戏", client);
 	}
 }
 
@@ -5786,11 +5771,11 @@ public Action:Command_Say(client, args)
 			g_iUserFlood[client]=1;
 			CreateTimer(10.0, removeFlood, client);
 		} else {
-			PrintToChat(client,"%cDo not flood the server!", GREEN);
+			PrintToChat(client,"%c不要刷屏", GREEN);
 		}
 	}
 	// Top10
-	else if (strcmp(text[startidx], "/top10", false) == 0 || strcmp(text[startidx], "!top10", false) == 0 || strcmp(text[startidx], "top10", false) == 0)
+	else if (strcmp(text[startidx], "/top", false) == 0 || strcmp(text[startidx], "!top", false) == 0 || strcmp(text[startidx], "top", false) == 0)
 	{		
 		if(g_iUserFlood[client] != 1){
 			saveUser(client);
@@ -5798,11 +5783,11 @@ public Action:Command_Say(client, args)
 			g_iUserFlood[client]=1;
 			CreateTimer(10.0, removeFlood, client);
 		} else {
-			PrintToChat(client,"%cDo not flood the server!", GREEN);
+			PrintToChat(client,"%c不要刷屏", GREEN);
 		}
 	}
 	// Top10
-	else if (strcmp(text[startidx], "/topmedics", false) == 0 || strcmp(text[startidx], "!topmedics", false) == 0 || strcmp(text[startidx], "topmedics", false) == 0)
+	else if (strcmp(text[startidx], "/topm", false) == 0 || strcmp(text[startidx], "!topm", false) == 0 || strcmp(text[startidx], "topm", false) == 0)
 	{		
 		if(g_iUserFlood[client] != 1){
 			saveUser(client);
@@ -5810,11 +5795,11 @@ public Action:Command_Say(client, args)
 			g_iUserFlood[client]=1;
 			CreateTimer(10.0, removeFlood, client);
 		} else {
-			PrintToChat(client,"%cDo not flood the server!", GREEN);
+			PrintToChat(client,"%c不要刷屏", GREEN);
 		}
 	}
 	// Headhunters
-	else if (strcmp(text[startidx], "/headhunters", false) == 0 || strcmp(text[startidx], "!headhunters", false) == 0 || strcmp(text[startidx], "headhunters", false) == 0)
+	else if (strcmp(text[startidx], "/toph", false) == 0 || strcmp(text[startidx], "!toph", false) == 0 || strcmp(text[startidx], "toph", false) == 0)
 	{		
 		if(g_iUserFlood[client] != 1){
 			saveUser(client);
@@ -5822,7 +5807,7 @@ public Action:Command_Say(client, args)
 			g_iUserFlood[client]=1;
 			CreateTimer(10.0, removeFlood, client);
 		} else {
-			PrintToChat(client,"%cDo not flood the server!", GREEN);
+			PrintToChat(client,"%c不要刷屏", GREEN);
 		}
 	}
 	return Plugin_Continue;
@@ -5856,12 +5841,12 @@ public GetMyRank(client){
 		}
 		else
 		{
-			PrintToChat(client,"%cWait for system load you from database", GREEN);
+			PrintToChat(client,"%c正在加载数据，请稍候", GREEN);
 		}
 	}
 	else
 	{
-		PrintToChat(client, "%cRank System is now not available", GREEN);
+		PrintToChat(client, "%c排名系统不可用", GREEN);
 	}
 }
 
@@ -5873,13 +5858,13 @@ public showTOP(client){
 		// Get Top10
 		decl String:buffer[200];
 		//Format(buffer, sizeof(buffer), "SELECT *, (`deaths`/`kills`) / `played_time` AS rankn FROM `ins_rank` WHERE `kills` > 0 AND `deaths` > 0 ORDER BY rankn ASC LIMIT 10");
-		Format(buffer, sizeof(buffer), "SELECT *, `score` AS rankn FROM `ins_rank` WHERE `score` > 0 ORDER BY rankn DESC LIMIT 10");
+		Format(buffer, sizeof(buffer), "SELECT *, `score` AS rankn FROM `ins_rank` WHERE `score` > 0 ORDER BY rankn DESC LIMIT 8");
 		if(DEBUG == 1){
 			//PrintToServer("DEBUG: showTOP (%s)", buffer);
 		}
 		SQL_TQuery(g_hDB, SQLTopShow, buffer, client);
 	} else {
-		PrintToChat(client, "%cRank System is now not avilable", GREEN);
+		PrintToChat(client, "%c排名系统不可用", GREEN);
 	}
 }
 
@@ -5890,13 +5875,13 @@ public showTOPMedics(client){
 	{
 		// Get HadHunters
 		decl String:buffer[200];
-		Format(buffer, sizeof(buffer), "SELECT * FROM ins_rank ORDER BY revives, heals DESC LIMIT 10");
+		Format(buffer, sizeof(buffer), "SELECT * FROM ins_rank ORDER BY revives DESC, heals DESC LIMIT 8");
 		if(DEBUG == 1){
 			//PrintToServer("DEBUG: showTOPMedics (%s)", buffer);
 		}
 		SQL_TQuery(g_hDB, SQLTopShowMedic, buffer, client);
 	} else {
-		PrintToChat(client, "%cRank System is now not avilable", GREEN);
+		PrintToChat(client, "%c排名系统不可用", GREEN);
 	}
 }
 
@@ -5913,7 +5898,7 @@ public showTOPHeadHunter(client){
 		}
 		SQL_TQuery(g_hDB, SQLTopShowHS, buffer, client);
 	} else {
-		PrintToChat(client, "%cRank System is now not avilable", GREEN);
+		PrintToChat(client, "%c排名系统不可用", GREEN);
 	}
 }
 // Dummy menu
@@ -6000,7 +5985,7 @@ public SQLJoinMsgGetScore(Handle:owner, Handle:hndl, const String:error[], any:c
 	{
 		LogError(error);
 		//PrintToServer("Last Connect SQL Error: %s", error);
-		PrintToChatAll("\x04%N\x01 joined the fight.", client);
+		PrintToChatAll("\x04%N\x01 加入了游戏", client);
 		return;
 	}
 	
@@ -6017,7 +6002,7 @@ public SQLJoinMsgGetScore(Handle:owner, Handle:hndl, const String:error[], any:c
 	}
 	else
 	{
-		PrintToChatAll("\x04%N\x01 joined the fight.", client);
+		PrintToChatAll("\x04%N\x01 加入了游戏", client);
 	}
 }
 
@@ -6029,7 +6014,7 @@ public SQLJoinMsgGetRank(Handle:owner, Handle:hndl, const String:error[], any:cl
 	{
 		LogError(error);
 		//PrintToServer("Last Connect SQL Error: %s", error);
-		PrintToChatAll("\x04%N\x01 joined the fight.", client);
+		PrintToChatAll("\x04%N\x01 加入了游戏", client);
 		return;
 	}
 	
@@ -6045,7 +6030,7 @@ public SQLJoinMsgGetRank(Handle:owner, Handle:hndl, const String:error[], any:cl
 	}
 	else
 	{
-		PrintToChatAll("\x04%N\x01 joined the fight.", client);
+		PrintToChatAll("\x04%N\x01 加入了游戏", client);
 	}
 }
 // Display join message - Print to chat all
@@ -6056,7 +6041,7 @@ public SQLJoinMsgGetPlayerCount(Handle:owner, Handle:hndl, const String:error[],
 	{
 		LogError(error);
 		//PrintToServer("Last Connect SQL Error: %s", error);
-		PrintToChatAll("\x04%N\x01 joined the fight.", client);
+		PrintToChatAll("\x04%N\x01 加入了游戏", client);
 		return;
 	}
 	
@@ -6067,12 +6052,12 @@ public SQLJoinMsgGetPlayerCount(Handle:owner, Handle:hndl, const String:error[],
 		new iPlayerCount = SQL_FetchInt(hndl, 0);
 		
 		// Display join message
-		PrintToChatAll("\x04%N\x01 joined the fight. \x05(Rank: %i of %i)", client, g_iRank[client], iPlayerCount);
+		PrintToChatAll("\x04%N\x01 加入了游戏 \x05（排名：%i / %i）", client, g_iRank[client], iPlayerCount);
 		//PrintToServer("%N joined the fight. (Rank: %i of %i)", client, g_iRank[client], iPlayerCount);
 	}
 	else
 	{
-		PrintToChatAll("\x04%N\x01 joined the fight.", client);
+		PrintToChatAll("\x04%N\x01 加入了游戏", client);
 	}
 }
 
@@ -6176,9 +6161,9 @@ public SQLGetMyRank(Handle:owner, Handle:hndl, const String:error[], any:client)
 		Format(buffer, sizeof(buffer), "SELECT COUNT(*) FROM ins_rank WHERE score >= %i", RAscore);
 		SQL_TQuery(g_hDB, SQLGetRank, buffer, client);
 		
-		PrintToChat(client,"%cScore: %i | Kills: %i | Revives: %i | Heals: %i | Deaths: %i | Headshots: %i | Sucsides: %i", GREEN, RAscore, RAkills, RArevives, RAheals, RAdeaths, RAheadshots, RAsucsides);
+		PrintToChat(client,"%c分数：%i | 击杀：%i | 救援：%i | 治疗：%i | 死亡：%i | 爆头：%i | 自杀：%i", GREEN, RAscore, RAkills, RArevives, RAheals, RAdeaths, RAheadshots, RAsucsides);
 	} else {
-		PrintToChat(client, "%cYour rank is not avlilable!", GREEN);
+		PrintToChat(client, "%c你的排名不可用", GREEN);
 	}
 }
 
@@ -6202,7 +6187,7 @@ public SQLGetRank(Handle:owner, Handle:hndl, const String:error[], any:client){
 		// Get player count
 		SQL_TQuery(g_hDB, SQLShowRankToChat, "SELECT COUNT(*) FROM ins_rank", client);
 	} else {
-		PrintToChat(client, "%cYour rank is not avlilable!", GREEN);
+		PrintToChat(client, "%c你的排名不可用", GREEN);
 	}
 }
 
@@ -6223,9 +6208,9 @@ public SQLShowRankToChat(Handle:owner, Handle:hndl, const String:error[], any:cl
 		new iPlayerCount = SQL_FetchInt(hndl, 0);
 		
 		// Display rank
-		PrintToChat(client,"%cYour rank is: %i (of %i).", GREEN, g_iRank[client], iPlayerCount);
+		PrintToChat(client,"%c你的排名：%i / %i", GREEN, g_iRank[client], iPlayerCount);
 	} else {
-		PrintToChat(client, "%cYour rank is not avlilable!", GREEN);
+		PrintToChat(client, "%c你的排名不可用", GREEN);
 	}
 }
 
@@ -6242,7 +6227,7 @@ public SQLTopShow(Handle:owner, Handle:hndl, const String:error[], any:client){
 	// Init panel
 	new Handle:hPanel = CreatePanel(GetMenuStyleHandle(MenuStyle_Radio));
 	new String:text[128];
-	Format(text,127,"Top 10 Players");
+	Format(text,127,"玩家排名");
 	SetPanelTitle(hPanel,text);
 	
 	// Init variables
@@ -6270,18 +6255,18 @@ public SQLTopShow(Handle:owner, Handle:hndl, const String:error[], any:client){
 			// Set text
 			Format(text,127,"[%d] %s", row, name);
 			DrawPanelText(hPanel, text);
-			Format(text,127," - Score: %i | Kills: %i | Deaths: %i", score, kills, deaths);
+			Format(text,127," - 分数：%i | 击杀：%i | 死亡：%i", score, kills, deaths);
 			DrawPanelText(hPanel, text);
 		}
 	} else {
-			Format(text,127,"TOP 10 is empty!");
+			Format(text,127,"没有排名");
 			DrawPanelText(hPanel, text);
 	}
 	
 	// Draw panel
 	DrawPanelItem(hPanel, " ", ITEMDRAW_SPACER|ITEMDRAW_RAWLINE);
 	
-	Format(text,59,"Exit");
+	Format(text,59,"退出");
 	DrawPanelItem(hPanel, text);
 	
 	SendPanelToClient(hPanel, client, TopMenu, 20);
@@ -6302,7 +6287,7 @@ public SQLTopShowMedic(Handle:owner, Handle:hndl, const String:error[], any:clie
 	// Init panel
 	new Handle:hPanel = CreatePanel(GetMenuStyleHandle(MenuStyle_Radio));
 	new String:text[128];
-	Format(text,127,"Top Medics");
+	Format(text,127,"医疗兵排名");
 	SetPanelTitle(hPanel,text);
 	
 	// Init variables
@@ -6328,18 +6313,18 @@ public SQLTopShowMedic(Handle:owner, Handle:hndl, const String:error[], any:clie
 			// Set text
 			Format(text,127,"[%d] %s", row, name);
 			DrawPanelText(hPanel, text);
-			Format(text,127," - Revives: %i | Heals: %i", revives, heals);
+			Format(text,127," - 救援：%i | 治疗：%i", revives, heals);
 			DrawPanelText(hPanel, text);
 		}
 	} else {
-			Format(text,127,"TOP Medics is empty!");
+			Format(text,127,"没有排名");
 			DrawPanelText(hPanel, text);
 	}
 	
 	// Draw panel
 	DrawPanelItem(hPanel, " ", ITEMDRAW_SPACER|ITEMDRAW_RAWLINE);
 	
-	Format(text,59,"Exit");
+	Format(text,59,"退出");
 	DrawPanelItem(hPanel, text);
 	
 	SendPanelToClient(hPanel, client, TopMenu, 20);
@@ -6359,7 +6344,7 @@ public SQLTopShowHS(Handle:owner, Handle:hndl, const String:error[], any:client)
 	// Init panel
 	new Handle:hPanel = CreatePanel(GetMenuStyleHandle(MenuStyle_Radio));
 	new String:text[128];
-	Format(text,127,"Top 10 Headhunters");
+	Format(text,127,"爆头排名");
 	SetPanelTitle(hPanel,text);
 	
 	// Init variables
@@ -6385,30 +6370,30 @@ public SQLTopShowHS(Handle:owner, Handle:hndl, const String:error[], any:client)
 			
 			// Calc
 			if(ptimed <= 3600){
-				Format(textime,63,"%i m.", ptimed / 60);
+				Format(textime,63,"%i 分", ptimed / 60);
 			} else if(ptimed <= 43200){
-				Format(textime,63,"%i h.", ptimed / 60 / 60);
+				Format(textime,63,"%i 时", ptimed / 60 / 60);
 			} else if(ptimed <= 1339200){
-				Format(textime,63,"%i d.", ptimed / 60 / 60 / 12);
+				Format(textime,63,"%i 天", ptimed / 60 / 60 / 12);
 			} else {
-				Format(textime,63,"%i mo.", ptimed / 60 / 60 / 12 / 31);
+				Format(textime,63,"%i 月", ptimed / 60 / 60 / 12 / 31);
 			}
 			
 			// Set text
 			Format(text,127,"[%d] %s", row, name);
 			DrawPanelText(hPanel, text);
-			Format(text,127," - HS: %i - In Time: %s", shoths, textime);
+			Format(text,127," - 爆头：%i - 耗时：%s", shoths, textime);
 			DrawPanelText(hPanel, text);
 		}
 	} else {
-		Format(text,127,"TOP Headhunters is empty!");
+		Format(text,127,"没有排名");
 		DrawPanelText(hPanel, text);
 	}
 	
 	// Display panel
 	DrawPanelItem(hPanel, " ", ITEMDRAW_SPACER|ITEMDRAW_RAWLINE);
 
-	Format(text,59,"Exit");
+	Format(text,59,"退出");
 	DrawPanelItem(hPanel, text);
 	
 	SendPanelToClient(hPanel, client, TopMenu, 20);
@@ -6751,13 +6736,13 @@ public Action:Healthkit(Handle:timer, Handle:hDatapack)
 									{
 										//EmitSoundToAll("Lua_sounds/healthkit_complete.wav", client, SNDCHAN_STATIC, _, _, 1.0);
 										iHealth = 100;
-										PrintCenterText(client, "Medical Pack HP Left: %i", g_healthPack_Amount[entity]);
-										PrintHintText(client, "A medic assisted in healing you (HP: %i)", iHealth);
+										PrintCenterText(client, "医疗包剩余：%i", g_healthPack_Amount[entity]);
+										PrintHintText(client, "医疗助理正在治疗你(HP: %i)", iHealth);
 									}
 									else 
 									{
-										PrintCenterText(client, "Medical Pack HP Left: %i", g_healthPack_Amount[entity]);
-										PrintHintText(client, "Medic area healing you (HP: %i)", iHealth);
+										PrintCenterText(client, "医疗包剩余：%i", g_healthPack_Amount[entity]);
+										PrintHintText(client, "治疗区域正在治疗你(HP: %i)", iHealth);
 										switch(GetRandomInt(1, 6))
 										{
 											case 1: EmitSoundToAll("weapons/universal/uni_crawl_l_01.wav", client, SNDCHAN_VOICE, _, _, 1.0);
@@ -6796,27 +6781,27 @@ public Action:Healthkit(Handle:timer, Handle:hDatapack)
 									//PrintToServer("DEBUG 10");
 											//EmitSoundToAll("Lua_sounds/healthkit_complete.wav", client, SNDCHAN_STATIC, _, _, 1.0);
 											iHealth = g_nonMedicHealSelf_max;
-											PrintCenterText(client, "Medical Pack HP Left: %i", g_healthPack_Amount[entity]);
-											PrintHintText(client, "You healed yourself (HP: %i) | MAX: %i", iHealth, g_nonMedicHealSelf_max);
+											PrintCenterText(client, "医疗包剩余：%i", g_healthPack_Amount[entity]);
+											PrintHintText(client, "你治疗了你自己 (HP: %i) | 最大: %i", iHealth, g_nonMedicHealSelf_max);
 										}
 										else 
 										{
-											PrintCenterText(client, "Medical Pack HP Left: %i", g_healthPack_Amount[entity]);
-											PrintHintText(client, "Healing Self (HP: %i) | MAX: %i", iHealth, g_nonMedicHealSelf_max);
+											PrintCenterText(client, "医疗包剩余：%i", g_healthPack_Amount[entity]);
+											PrintHintText(client, "自行治疗中 (HP: %i) | 最大: %i", iHealth, g_nonMedicHealSelf_max);
 										}
 
 										SetEntityHealth(client, iHealth);
 									}
 									else 
 									{
-										PrintCenterText(client, "Medical Pack HP Left: %i", g_healthPack_Amount[entity]);
-										PrintHintText(client, "You healed yourself (HP: %i) | MAX: %i", iHealth, g_nonMedicHealSelf_max);
+										PrintCenterText(client, "医疗包剩余：%i", g_healthPack_Amount[entity]);
+										PrintHintText(client, "你治疗了你自己 (HP: %i) | 最大: %i", iHealth, g_nonMedicHealSelf_max);
 									}
 
 								}
 								else if (iHealth < g_nonMedicHealSelf_max && !(StrContains(sWeapon, "weapon_knife") > -1))
 								{
-										PrintHintText(client, "No medics nearby! Pull knife out to heal! (HP: %i)", iHealth);
+										PrintHintText(client, "附近没有医疗兵，拿出匕首来自救 (HP: %i)", iHealth);
 								}
 							}
 							
@@ -6860,13 +6845,13 @@ public Action:Healthkit(Handle:timer, Handle:hDatapack)
 										{
 											//EmitSoundToAll("Lua_sounds/healthkit_complete.wav", client, SNDCHAN_STATIC, _, _, 1.0);
 											iHealth = 100;
-											PrintCenterText(client, "Medical Pack HP Left: %i", g_healthPack_Amount[entity]);
-											PrintHintText(client, "A medic assisted in healing you (HP: %i)", iHealth);
+											PrintCenterText(client, "医疗包剩余：%i", g_healthPack_Amount[entity]);
+											PrintHintText(client, "医疗助理正在治疗你(HP: %i)", iHealth);
 										}
 										else 
 										{
-											PrintCenterText(client, "Medical Pack HP Left: %i", g_healthPack_Amount[entity]);
-											PrintHintText(client, "Self area healing (HP: %i)", iHealth);
+											PrintCenterText(client, "医疗包剩余：%i", g_healthPack_Amount[entity]);
+											PrintHintText(client, "自救区域治疗中 (HP: %i)", iHealth);
 										}
 
 										SetEntityHealth(client, iHealth);
@@ -6882,19 +6867,19 @@ public Action:Healthkit(Handle:timer, Handle:hDatapack)
 										{
 											//EmitSoundToAll("Lua_sounds/healthkit_complete.wav", client, SNDCHAN_STATIC, _, _, 1.0);
 											iHealth = g_medicHealSelf_max;
-											PrintCenterText(client, "Medical Pack HP Left: %i", g_healthPack_Amount[entity]);
-											PrintHintText(client, "You area healed yourself (HP: %i) | MAX: %i", iHealth, g_medicHealSelf_max);
+											PrintCenterText(client, "医疗包剩余：%i", g_healthPack_Amount[entity]);
+											PrintHintText(client, "你用自救区域治疗了自己 (HP: %i) | 最大: %i", iHealth, g_medicHealSelf_max);
 										}
 										else 
 										{
-											PrintCenterText(client, "Medical Pack HP Left: %i", g_healthPack_Amount[entity]);
-											PrintHintText(client, "Self area healing (HP: %i) | MAX %i", iHealth, g_medicHealSelf_max);
+											PrintCenterText(client, "医疗包剩余：%i", g_healthPack_Amount[entity]);
+											PrintHintText(client, "自救区域治疗中 (HP: %i) | 最大: %i", iHealth, g_medicHealSelf_max);
 										}
 									}
 									else 
 									{
-										PrintCenterText(client, "Medical Pack HP Left: %i", g_healthPack_Amount[entity]);
-										PrintHintText(client, "You healed yourself (HP: %i) | MAX: %i", iHealth, g_medicHealSelf_max);
+										PrintCenterText(client, "医疗包剩余：%i", g_healthPack_Amount[entity]);
+										PrintHintText(client, "你治疗了你自己 (HP: %i) | 最大: %i", iHealth, g_medicHealSelf_max);
 									}
 								}
 							}
@@ -7044,18 +7029,18 @@ public Check_NearbyMedicsRevive(client, iInjured)
 				{
 						decl String:woundType[64];
 						if (g_playerWoundType[iInjured] == 0)
-							woundType = "minor wound";
+							woundType = "轻伤";
 						else if (g_playerWoundType[iInjured] == 1)
-							woundType = "moderate wound";
+							woundType = "中度伤";
 						else if (g_playerWoundType[iInjured] == 2)
-							woundType = "critical wound";
+							woundType = "重伤";
 						decl String:sBuf[255];
 						// Chat to all
-						Format(sBuf, 255,"\x05%N\x01 revived(assisted) \x03%N from a %s", friendlyMedic, iInjured, woundType);
+						Format(sBuf, 255,"\x05%N\x01 救起了(协助) %s 的 \x03%N", friendlyMedic, woundType, iInjured);
 						PrintToChatAll("%s", sBuf);
 						
 						// Hint to friendlyMedic
-						Format(sBuf, 255,"You revived(assisted) %N from a %s", iInjured, woundType);
+						Format(sBuf, 255,"你救起了(协助) %s 的 %N", iInjured, woundType);
 						PrintHintText(friendlyMedic, "%s", sBuf);
 						
 						// Add kill bonus to friendlyMedic
@@ -7075,10 +7060,7 @@ public Check_NearbyMedicsRevive(client, iInjured)
 						SetPlayerScore(friendlyMedic, iScore + 10);
 
 						decl String:sBuf2[255];
-						if (iBonus > 1)
-							Format(sBuf2, 255,"Awarded %i kills and %i score for assisted revive", iBonus, 10);
-						else
-							Format(sBuf2, 255,"Awarded %i kill and %i score for assisted revive", iBonus, 10);
+						Format(sBuf2, 255,"你因协助治疗获得了 %i 点击杀和 %i 点分数奖励", iBonus, 10);
 						
 						PrintToChat(friendlyMedic, "%s", sBuf2);
 				}
