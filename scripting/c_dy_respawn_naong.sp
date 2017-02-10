@@ -3359,8 +3359,8 @@ public Action:Event_ObjectDestroyed_Post(Handle:event, const String:name[], bool
 
 public Action:cmd_kill(client, args) {
 	g_trackKillDeaths[client] += 1;
-	PrintToChatAll("\x05%N\x01 has used the kill command! | Times Used: %d | Abusing for ammo = ban", client, g_trackKillDeaths[client]);
-	PrintToChat(client, "\x04[SERNIX RULES] %t", "Abusing kill command is not allowed! | Times used %d | Abusing for ammo = ban", g_trackKillDeaths[client]);
+	PrintToChatAll("\x05%N\x01 使用了自杀命令。使用次数：%d", client, g_trackKillDeaths[client]);
+	PrintToChat(client, "\x04 你使用命令自杀了。使用次数：%d", g_trackKillDeaths[client]);
 	return Plugin_Handled;
 }
 
@@ -4698,11 +4698,11 @@ public Action:Timer_ReviveMonitor(Handle:timer, any:data)
 						// {
 						// 	decl String:woundType[64];
 						// 	if (g_playerWoundType[iInjured] == 1)
-						// 		woundType = "moderately wounded";
+						// 		woundType = "中度伤";
 						// 	else if (g_playerWoundType[iInjured] == 2)
-						// 		woundType = "critically wounded";
+						// 		woundType = "重伤";
 						// 	// Hint to NonMedic
-						// 	Format(sBuf, 255,"%N is %s and can only be revived by a medic!", iInjured, woundType);
+						// 	Format(sBuf, 255,"%N 受到了 %s，只有学医才能救他", iInjured, woundType);
 						// 	PrintHintText(iMedic, "%s", sBuf);
 						// }
 						}
