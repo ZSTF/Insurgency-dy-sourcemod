@@ -455,7 +455,7 @@ new Handle:g_hDB;
 public Plugin:myinfo =
 {
 	name = "[INS] Player Respawn",
-	author = "Jared Ballou (Contributor: Daimyo, naong)",
+	author = "Jared Ballou (Contributor: Daimyo, naong)(Translate[Schinese]:xiaooloong, Kud)",
 	version = PLUGIN_VERSION,
 	description = PLUGIN_DESCRIPTION,
 	url = "http://jballou.com"
@@ -1165,7 +1165,7 @@ void Dynamic_Loadouts()
 {
 	new Float:fRandom = GetRandomFloat(0.0, 1.0);
 	new Handle:hTheaterOverride = FindConVar("mp_theater_override");
-	SetConVarString(hTheaterOverride, "dy_gnalvl_coop_usmc", true, false);	
+	SetConVarString(hTheaterOverride, "dy_gnalvl_coop_usmc_chn_20170214a", true, false);
 	// Occurs counter attack
 	// if (fRandom >= 0.0 && fRandom < 0.26)
 	// {
@@ -1549,11 +1549,11 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 		{
 			decl String:textToPrintChat[64];
 			decl String:textToPrint[64];
-			Format(textToPrintChat, sizeof(textToPrintChat), "队友将在完成检查点后复活，尽快完成检查点");
+			Format(textToPrintChat, sizeof(textToPrintChat), "队友将在完成检查点后复活，尽快占领检查点");
 			if (g_isHunt == 1)
-				Format(textToPrint, sizeof(textToPrint), "敌军增援将在 %d 秒后到达 | 尽快完成检查点", g_iReinforceTime);
+				Format(textToPrint, sizeof(textToPrint), "敌军增援将在 %d 秒后到达 | 尽快占领检查点", g_iReinforceTime);
 			else
-				Format(textToPrint, sizeof(textToPrint), "敌军增援将在 %d 秒后到达 | 尽快完成检查点", g_iReinforceTime);
+				Format(textToPrint, sizeof(textToPrint), "敌军增援将在 %d 秒后到达 | 尽快占领检查点", g_iReinforceTime);
 
 			PrintHintTextToAll(textToPrint);
 			if (g_iReinforceTime <= 60)
@@ -1566,11 +1566,11 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 		{
 			decl String:textToPrintChat[64];
 			decl String:textToPrint[64];
-			Format(textToPrintChat, sizeof(textToPrintChat), "队友将在完成检查点后复活，尽快完成检查点");
+			Format(textToPrintChat, sizeof(textToPrintChat), "队友将在完成检查点后复活，尽快占领检查点");
 			if (g_isHunt == 1)
-				Format(textToPrint, sizeof(textToPrint), "敌军增援将在 %d 秒后到达 | 尽快完成检查点", g_iReinforceTime);
+				Format(textToPrint, sizeof(textToPrint), "敌军增援将在 %d 秒后到达 | 尽快占领检查点", g_iReinforceTime);
 			else
-				Format(textToPrint, sizeof(textToPrint), "敌军增援将在 %d 秒后到达 | 尽快完成检查点", g_iReinforceTime);
+				Format(textToPrint, sizeof(textToPrint), "敌军增援将在 %d 秒后到达 | 尽快占领检查点", g_iReinforceTime);
 
 			PrintHintTextToAll(textToPrint);
 			//PrintToChatAll(textToPrintChat);
@@ -3425,10 +3425,10 @@ public Action:Event_PlayerPickSquad_Post( Handle:event, const String:name[], boo
 	{
 		// Admin medic
 		if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			Format(sNewNickname, sizeof(sNewNickname), "[管理][医疗] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][管理][医疗] %s", g_client_org_nickname[client]);
 		// Donor medic
 		else if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_RESERVATION))
-			Format(sNewNickname, sizeof(sNewNickname), "[会员][医疗] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][医疗] %s", g_client_org_nickname[client]);
 		// Normal medic
 		else
 			Format(sNewNickname, sizeof(sNewNickname), "[医疗] %s", g_client_org_nickname[client]);
@@ -3437,10 +3437,10 @@ public Action:Event_PlayerPickSquad_Post( Handle:event, const String:name[], boo
 	{
 		// Admin medic
 		if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			Format(sNewNickname, sizeof(sNewNickname), "[管理][工程] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][管理][工程] %s", g_client_org_nickname[client]);
 		// Donor medic
 		else if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_RESERVATION))
-			Format(sNewNickname, sizeof(sNewNickname), "[会员][工程] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][工程] %s", g_client_org_nickname[client]);
 		// Normal medic
 		else
 			Format(sNewNickname, sizeof(sNewNickname), "[工程] %s", g_client_org_nickname[client]);
@@ -3450,10 +3450,10 @@ public Action:Event_PlayerPickSquad_Post( Handle:event, const String:name[], boo
 	{
 		// Admin
 		if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			Format(sNewNickname, sizeof(sNewNickname), "[管理] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][管理] %s", g_client_org_nickname[client]);
 		// Donor
 		else if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_RESERVATION))
-			Format(sNewNickname, sizeof(sNewNickname), "[会员] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ] %s", g_client_org_nickname[client]);
 		// Normal player
 		else
 			Format(sNewNickname, sizeof(sNewNickname), "%s", g_client_org_nickname[client]);
@@ -6845,7 +6845,7 @@ public Action:Healthkit(Handle:timer, Handle:hDatapack)
 										//EmitSoundToAll("Lua_sounds/healthkit_complete.wav", client, SNDCHAN_STATIC, _, _, 1.0);
 										iHealth = 100;
 										PrintCenterText(client, "医疗包剩余：%i", g_healthPack_Amount[entity]);
-										PrintHintText(client, "医疗助理正在治疗你(HP: %i)", iHealth);
+										PrintHintText(client, "医疗正在协助治疗你(HP: %i)", iHealth);
 									}
 									else 
 									{
@@ -6954,7 +6954,7 @@ public Action:Healthkit(Handle:timer, Handle:hDatapack)
 											//EmitSoundToAll("Lua_sounds/healthkit_complete.wav", client, SNDCHAN_STATIC, _, _, 1.0);
 											iHealth = 100;
 											PrintCenterText(client, "医疗包剩余：%i", g_healthPack_Amount[entity]);
-											PrintHintText(client, "医疗助理正在治疗你(HP: %i)", iHealth);
+											PrintHintText(client, "医疗正在协助治疗你(HP: %i)", iHealth);
 										}
 										else 
 										{
