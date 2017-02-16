@@ -4282,7 +4282,7 @@ public Action:Timer_PlayerRespawn(Handle:Timer, any:client)
 				if (!IsFakeClient(client))
 				{
 					decl String:sRemainingTime[256];
-					Format(sRemainingTime, sizeof(sRemainingTime),"你受到 %d 点 %s，耐心等待医疗兵的救援\n\n或者等待 %d 秒后复活（剩余生命：%d）", g_clientDamageDone[client], woundType, g_iRespawnTimeRemaining[client], g_iSpawnTokens[client]);
+					Format(sRemainingTime, sizeof(sRemainingTime),"你受到 %d 点 %s，请耐心等待医疗兵的救援\n\n或者等待 %d 秒后复活（剩余生命：%d）", g_clientDamageDone[client], woundType, g_iRespawnTimeRemaining[client], g_iSpawnTokens[client]);
 					PrintCenterText(client, sRemainingTime);
 				}
 			}
@@ -4589,7 +4589,7 @@ public Action:Timer_ReviveMonitor(Handle:timer, any:data)
 						// 	else if (g_playerWoundType[iInjured] == 2)
 						// 		woundType = "重伤";
 						// 	// Hint to NonMedic
-						// 	Format(sBuf, 255,"%N 受到了 %s，只有学医才能救他", iInjured, woundType);
+						// 	Format(sBuf, 255,"%N 受到了 %s，只有医疗兵才能救他", iInjured, woundType);
 						// 	PrintHintText(iMedic, "%s", sBuf);
 						// }
 						}
@@ -4757,11 +4757,11 @@ public Action:Timer_MedicMonitor(Handle:timer)
 						}
 						else
 						{
-							PrintHintText(iTarget, "不要动，%N 正在治疗你(HP: %i)", medic, iHealth);
+							PrintHintText(iTarget, "不要移动，%N 正在治疗你(HP: %i)", medic, iHealth);
 						}
 						
 						SetEntityHealth(iTarget, iHealth);
-						PrintHintText(medic, "%N\nHP: %i\n\n使用除颤器治疗: %i", iTarget, iHealth, g_iHeal_amount_paddles);
+						PrintHintText(medic, "%N\nHP: %i\n\n正在使用除颤器治疗: %i", iTarget, iHealth, g_iHeal_amount_paddles);
 					}
 					else
 					{
@@ -4803,7 +4803,7 @@ public Action:Timer_MedicMonitor(Handle:timer)
 						}
 						else
 						{
-							PrintHintText(iTarget, "不要动，%N 正在治疗你(HP: %i)", medic, iHealth);
+							PrintHintText(iTarget, "不要移动，%N 正在治疗你(HP: %i)", medic, iHealth);
 						}
 						
 						SetEntityHealth(iTarget, iHealth);
@@ -6850,13 +6850,13 @@ public Action:Healthkit(Handle:timer, Handle:hDatapack)
 									{
 										//EmitSoundToAll("Lua_sounds/healthkit_complete.wav", client, SNDCHAN_STATIC, _, _, 1.0);
 										iHealth = 100;
-										PrintCenterText(client, "医疗包剩余：%i", g_healthPack_Amount[entity]);
+										PrintCenterText(client, "医疗包剩余量：%i", g_healthPack_Amount[entity]);
 										PrintHintText(client, "医疗正在协助治疗你(HP: %i)", iHealth);
 									}
 									else 
 									{
 										PrintCenterText(client, "医疗包剩余：%i", g_healthPack_Amount[entity]);
-										PrintHintText(client, "治疗区域正在治疗你(HP: %i)", iHealth);
+										PrintHintText(client, "群体治疗区域正在治疗你(HP: %i)", iHealth);
 										switch(GetRandomInt(1, 6))
 										{
 											case 1: EmitSoundToAll("weapons/universal/uni_crawl_l_01.wav", client, SNDCHAN_VOICE, _, _, 1.0);
@@ -6915,7 +6915,7 @@ public Action:Healthkit(Handle:timer, Handle:hDatapack)
 								}
 								else if (iHealth < g_nonMedicHealSelf_max && !(StrContains(sWeapon, "weapon_knife") > -1))
 								{
-										PrintHintText(client, "附近没有医疗兵，拿出匕首来自救 (HP: %i)", iHealth);
+										PrintHintText(client, "附近没有医疗兵，请拿出匕首来自救 (HP: %i)", iHealth);
 								}
 							}
 							
@@ -6982,7 +6982,7 @@ public Action:Healthkit(Handle:timer, Handle:hDatapack)
 											//EmitSoundToAll("Lua_sounds/healthkit_complete.wav", client, SNDCHAN_STATIC, _, _, 1.0);
 											iHealth = g_medicHealSelf_max;
 											PrintCenterText(client, "医疗包剩余：%i", g_healthPack_Amount[entity]);
-											PrintHintText(client, "你用自救区域治疗了自己 (HP: %i) | 最大: %i", iHealth, g_medicHealSelf_max);
+											PrintHintText(client, "你使用了自救区域治疗了自己 (HP: %i) | 最大: %i", iHealth, g_medicHealSelf_max);
 										}
 										else 
 										{
