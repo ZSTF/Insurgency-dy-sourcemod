@@ -2395,7 +2395,7 @@ public Action:Event_Spawn(Handle:event, const String:name[], bool:dontBroadcast)
 		int iCanSpawn = CheckSpawnPointPlayers(vecOrigin,client);
 		new fRandomFloat = GetRandomFloat(0, 1.0);
 		//InsLog(DEBUG, "Event_Spawn iCanSpawn %d", iCanSpawn);
-		if (!iCanSpawn && (!Ins_InCounterAttack() || (acp+1) == ncp)) { // && (!Ins_InCounterAttack() || fRandomFloat < 0.1)) {
+		if (!iCanSpawn && (!Ins_InCounterAttack())) { // && (!Ins_InCounterAttack() || fRandomFloat < 0.1)) {
 
 			TeleportClient(client);
 			if (client > 0 && IsClientInGame(client) && IsPlayerAlive(client) && IsClientConnected(client))
@@ -4819,6 +4819,7 @@ public Action:Timer_MedicMonitor(Handle:timer)
 			{
 				// Check distance
 				new bool:bCanHealMedpack = false;
+				new bool:bCanHealPaddle = false;
 				
 				// Check weapon
 				new ActiveWeapon = GetEntPropEnt(medic, Prop_Data, "m_hActiveWeapon");
@@ -4827,6 +4828,10 @@ public Action:Timer_MedicMonitor(Handle:timer)
 				decl String:sWeapon[32];
 				GetEdictClassname(ActiveWeapon, sWeapon, sizeof(sWeapon));
 
+				if ((StrContains(sWeapon, "weapon_defib") > -1) || (StrContains(sWeapon, "weapon_knife") > -1) || (StrContains(sWeapon, "weapon_kabar") > -1))
+				{
+					bCanHealPaddle = true;
+				}
 				if ((StrContains(sWeapon, "weapon_healthkit") > -1))
 				{
 					bCanHealMedpack = true;
@@ -4834,17 +4839,21 @@ public Action:Timer_MedicMonitor(Handle:timer)
 				
 				// Check heal
 				new iHealth = GetClientHealth(medic);
-				if (bCanHealMedpack)
+				if (bCanHealMedpack || bCanHealPaddle)
 				{
 					if (iHealth < g_medicHealSelf_max)
 					{
-						iHealth += g_iHeal_amount_paddles;
+						if (bCanHealMedpack)
+							iHealth += g_iHeal_amount_medPack;
+						else
+							iHealth += g_iHeal_amount_paddles;
+
 						if (iHealth >= g_medicHealSelf_max)
 						{
 							iHealth = g_medicHealSelf_max;
 							PrintHintText(medic, "你治疗了你自己 (HP: %i) | 最大: %i", iHealth, g_medicHealSelf_max);
 						}
-						else
+						else 
 						{
 							PrintHintText(medic, "自行治疗中 (HP: %i) | 最大: %i", iHealth, g_medicHealSelf_max);
 						}
