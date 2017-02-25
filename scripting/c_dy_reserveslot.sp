@@ -105,7 +105,7 @@ public OnClientPostAdminCheck(clientSlot)
     if (hasReservedSlotAccess(playername, GetUserFlagBits(clientSlot)))
     {
       // is admin -> drop other player
-      PrintToServer("[ins_reserved_slots] connected to reserved slot, admin rights granted");
+      PrintToServer("[叛乱预留通道插件] 连接到预留通道, 权限已确认");
       //PrintToConsole(clientSlot,"[ins_reserved_slots] connected to reserved slot, admin rights granted");
       LogMessage("admin %s connected to reserved slot", playername);
       
@@ -119,7 +119,7 @@ public OnClientPostAdminCheck(clientSlot)
     else
     {
       // not admin -> drop this player
-      PrintToServer("[ins_reserved_slots] no free public slots");
+      PrintToServer("[叛乱预留通道插件] 没有更多的公共槽位了");
       //PrintToConsole(clientSlot,"[ins_reserved_slots] sorry, no free public slots");
       //LogMessage("unpriviledged user %s connected to reserved slot", playername);
         CreateTimer(0.1, OnTimedKickForReject, GetClientUserId(clientSlot));
@@ -134,7 +134,7 @@ bool:isPublicSlot(bool:isPreconnect=false) {
   new currentClientCount = GetRealClientCount(true) + ((isPreconnect) ? 1 : 0);
   new publicSlots = getPublicSlots();
   
-  PrintToServer("[ins_reserved_slots] public slot used (%d/%d)", currentClientCount, publicSlots);
+  PrintToServer("[叛乱预留通道插件] 公共槽位使用情况 (%d/%d)", currentClientCount, publicSlots);
   return (currentClientCount <= publicSlots );
 }
 getPublicSlots(){
@@ -199,7 +199,7 @@ KickToFreeSlotNow(clientSlot)
     GetClientAuthId(clientSlot, AuthId_Steam3, player_authid, sizeof(player_authid));
     LogMessage("kicking player %s [%s] to free slot", playername, player_authid);
     
-    KickClient(clientSlot, "%T", "kicked for free slot", clientSlot);
+    KickClient(clientSlot, "%T", "踢出以留空位", clientSlot);
   }
 }
 
@@ -224,14 +224,14 @@ bool:DropPlayerByWeight(bool: enforce=false) {
   
   if (lowestImmunity>UNKICKABLE)
   {
-    LogMessage("selecting player of lowest immunity group (%d)", lowestImmunity);
+    LogMessage("正在寻找最低权限优先级的玩家 (%d)", lowestImmunity);
     new target = findDropTarget(lowestImmunity); // find the target as configured by configuration cvars
     if (target>-1)
     {
       s_priorityVector[target]=UNKICKABLE; // fix to ensure not to select the same player multiple times (marker will be removed with next call to refreshPriorityVector())
       
       GetClientName(target, playername, 49);
-      LogMessage("[ins_reserved_slots] dropping %s%s", playername, (enforce) ? "(enforcing method kick when using 'connect' extension)" : "");
+      LogMessage("[叛乱预留通道插件] 正在踢出 %s%s", playername, (enforce) ? "(enforcing method kick when using 'connect' extension)" : "");
       
       if (enforce)
       { 
@@ -244,10 +244,10 @@ bool:DropPlayerByWeight(bool: enforce=false) {
       return true;
     }
   } else {
-    LogMessage("no non-admins available to drop, giving up.");
+    LogMessage("没有非管理员可踢出.");
   }
   
-  LogMessage("[ins_reserved_slots] no matching client found to kick");
+  LogMessage("[叛乱预留通道插件] 没有符合的客户端可踢出");
   return false;
 }
 
@@ -452,7 +452,7 @@ findRandomTarget(immunity_group)
       }
     }
   }
-  if (target!=-1) { LogMessage("selected random target %d", target); }
+  if (target!=-1) { LogMessage("选择随机玩家 %d", target); }
   return target;
 }
 
