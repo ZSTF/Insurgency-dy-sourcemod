@@ -450,7 +450,7 @@ public Action:Timer_Monitor_Props(Handle:Timer)
 									//ClientCredits = ClientCredits + Price;
 									//iCredits[client] = ClientCredits;
 									//PrintToChat(client, "Your \x04%s has been destroyed. Refunded \x03%d credits!", prop_choice, Price);
-									PrintToChat(client, "Your \x04%s has been destroyed. Points refund on capture", prop_choice);
+									PrintToChat(client, "你的 \x04%s 已被摧毁. 占领时返还你的点数", prop_choice);
 							}
 
 							g_propIntegrity[i] = 0;
@@ -521,7 +521,7 @@ public Action:Timer_Monitor_Props(Handle:Timer)
 								{
 
 									decl String:sBuf[255];
-									Format(sBuf, 255,"Deployable Owner: [%N] | Integrity: %d", client, propIntegrity);
+									Format(sBuf, 255,"建造者: [%N] | 耐久: %d", client, propIntegrity);
 									PrintHintText(client, "%s", sBuf);	
 										//PrintToServer("DEBUG 9");					
 								}
@@ -571,7 +571,7 @@ public Action:Timer_Monitor_Props(Handle:Timer)
 										}
 									}
 									decl String:sBuf[255];
-									Format(sBuf, 255,"Deployable Owner[%N] | Integrity: %d", engineerCheck, propIntegrity);
+									Format(sBuf, 255,"建造者: [%N] | 耐久: %d", engineerCheck, propIntegrity);
 									PrintHintText(client, "%s", sBuf);	
 										//PrintToServer("DEBUG 9");					
 								}
@@ -1040,7 +1040,7 @@ public Action:PropCommand(client, args)
 	new Handle:kv = CreateKeyValues("Props");
 	FileToKeyValues(kv, textPath);
 	om_public_prop_menu = CreateMenu(Public_Prop_Menu_Handler);
-	SetMenuTitle(om_public_prop_menu, "Construct | Credits: %d", iCredits[client]);
+	SetMenuTitle(om_public_prop_menu, "建筑 | 点数: %d", iCredits[client]);
 	PopLoop(kv, client);
 	DisplayMenu(om_public_prop_menu, client, MENU_TIME_FOREVER);
 	
@@ -1064,7 +1064,7 @@ PopLoop(Handle:kv, client)
 					new String:price[256];
 					KvGetString(kv, "price", price, sizeof(price), "0");
 					new String:MenuItem[256];
-					Format(MenuItem, sizeof(MenuItem), "%s - Cost: %s", buffer, price);
+					Format(MenuItem, sizeof(MenuItem), "%s - 花费: %s", buffer, price);
 					AddMenuItem(om_public_prop_menu, buffer, MenuItem);
 				}
 			}
@@ -1073,14 +1073,14 @@ PopLoop(Handle:kv, client)
 				new String:price[256];
 				KvGetString(kv, "price", price, sizeof(price), "0");
 				new String:MenuItem[256];
-				Format(MenuItem, sizeof(MenuItem), "%s - Cost: %s", buffer, price);
+				Format(MenuItem, sizeof(MenuItem), "%s - 花费: %s", buffer, price);
 				AddMenuItem(om_public_prop_menu, buffer, MenuItem);
 			}
 		}
 		while (KvGotoNextKey(kv));
 		CloseHandle(kv);
 	}
-	AddMenuItem(om_public_prop_menu, "decontruct", "Decontruct All (no refund)");
+	AddMenuItem(om_public_prop_menu, "decontruct", "摧毁所有建筑 (无退款)");
 	//AddMenuItem(om_public_prop_menu, "fastexit", "Fast-Exit Menu");
 }
 
@@ -1111,7 +1111,7 @@ public Action:Timer_Construct(Handle timer, Handle pack)
 	if (client > 0 && vectDist < 0 || vectDist > 0 || !IsPlayerAlive(client) || IsClientTimingOut(client) || (!(StrContains(sWeapon, "weapon_knife") > -1) && !(StrContains(sWeapon, "weapon_wrench") > -1)))
 	{
 		decl String:textPrintChat[64];
-		Format(textPrintChat, sizeof(textPrintChat), "(Deploy Canceled) - You moved and or put knife away");
+		Format(textPrintChat, sizeof(textPrintChat), "(取消建造) - 你走动了或者移动了刀");
 		PrintHintText(client, textPrintChat);
 		PrintToChat(client, textPrintChat);
 		g_engInMenu[client] = false;
@@ -1126,7 +1126,7 @@ public Action:Timer_Construct(Handle timer, Handle pack)
 		new Handle:kv = CreateKeyValues("Props");
 		FileToKeyValues(kv, textPath);
 		om_public_prop_menu = CreateMenu(Public_Prop_Menu_Handler);
-		SetMenuTitle(om_public_prop_menu, "Construct | Credits: %d", iCredits[client]);
+		SetMenuTitle(om_public_prop_menu, "建筑 | 点数: %d", iCredits[client]);
 		PopLoop(kv, client);
 		DisplayMenu(om_public_prop_menu, client, MENU_TIME_FOREVER);
 		new Float:CurrentTime = GetGameTime();
@@ -1153,7 +1153,7 @@ public Action:Timer_Construct(Handle timer, Handle pack)
 	decl String:prop_choice[255];
 	
 	GetMenuItem(om_public_prop_menu, target, prop_choice, sizeof(prop_choice));
-	Format(textToPrint, sizeof(textToPrint), "Deploying %s in %d seconds\n(Move to cancel deploy)", prop_choice, g_ConstructRemainingTime[client]);
+	Format(textToPrint, sizeof(textToPrint), "在 %d 秒内建造 %s \n(走动来取消建造)", g_ConstructRemainingTime[client], prop_choice);
 	PrintHintText(client, textToPrint);
 	//g_engInMenu[client] = false;
 	return Plugin_Continue;
@@ -1171,8 +1171,8 @@ public Public_Prop_Menu_Handler(Handle:menu, MenuAction:action, param1, param2)
 		if (param2 == 5)
 		{
 			KillProps(param1);
-			PrintHintText(param1, "Deployables Deconstructed");
-			PrintToChat(param1, "Deployables Deconstructed");
+			PrintHintText(param1, "建筑已摧毁");
+			PrintToChat(param1, "建筑已摧毁");
 			 g_ConstructRemainingTime[param1] = g_ConstructDeployTime;
 
 			g_engInMenu[param1] = false;
@@ -1244,8 +1244,8 @@ public Public_Prop_Menu_Handler(Handle:menu, MenuAction:action, param1, param2)
 			}
 			else
 			{
-				PrintToChat(param1, "You do not have enough credits to deploy that!"); 
-				PrintHintText(param1, "You do not have enough credits to deploy that!");
+				PrintToChat(param1, "你没有足够的点数来造这个建筑!"); 
+				PrintHintText(param1, "你没有足够的点数来造这个建筑!");
 				// new String:textPath[255];
 				// BuildPath(Path_SM, textPath, sizeof(textPath), "configs/om_public_props.txt");
 				// new Handle:kv = CreateKeyValues("Props");
@@ -1298,11 +1298,11 @@ public PropSpawn(client, param2)
 		{
 			if(bAdminOnly)
 			{
-				PrintToChat(client, "You have deployed a \x04%s", prop_choice);
-				PrintHintText(client, "You have deployed a %s", prop_choice);
-				LogAction(client, -1, "\"%s\" deployed a %s", name, prop_choice);
-				PrintToChat(client, "You have deployed a \x04%s for \x03%d credits!", prop_choice, Price);
-				Format(textToPrintChat, 255,"\x05%N\x01 deployed a \x04%s", client, prop_choice);
+				PrintToChat(client, "你建造了 \x04%s", prop_choice);
+				PrintHintText(client, "你建造了 %s", prop_choice);
+				LogAction(client, -1, "\"%s\" 建造了 %s", name, prop_choice);
+				PrintToChat(client, "你建造了 a \x04%s 并花费了 \x03%d 点点数!", prop_choice, Price);
+				Format(textToPrintChat, 255,"\x05%N\x01 建造了 \x04%s", client, prop_choice);
 				PrintToChatAll("%s", textToPrintChat);
 			}
 			else
@@ -1310,16 +1310,16 @@ public PropSpawn(client, param2)
 			
 			ClientCredits = ClientCredits - Price;
 			iCredits[client] = ClientCredits;
-			PrintToChat(client, "You have deployed a \x04%s for \x03%d credits!", prop_choice, Price);
-			PrintHintText(client, "You have deployed a %s for %d credits!", prop_choice, Price);
-			Format(textToPrintChat, 255,"\x05%N\x01 deployed a \x04%s", client, prop_choice);
+			PrintToChat(client, "你建造了 \x04%s 并花费了 \x03%d 点点数!", prop_choice, Price);
+			PrintHintText(client, "你建造了 %s 并花费了 %d 点点数!", prop_choice, Price);
+			Format(textToPrintChat, 255,"\x05%N\x01 建造了 \x04%s", client, prop_choice);
 			PrintToChatAll("%s", textToPrintChat);
 			}
 		}
 		else
 		{
-			PrintToChat(client, "You do not have enough credits to deploy that!");
-			PrintHintText(client, "You do not have enough credits to deploy that!");
+			PrintToChat(client, "你没有足够的点数来造这个建筑!");
+			PrintHintText(client, "你没有足够的点数来造这个建筑!");
 
 
 			return;
@@ -1328,7 +1328,7 @@ public PropSpawn(client, param2)
 	
 	else
 	{
-		PrintToChat(client, "You have deployed a \x04%s and your credits have not been reduced!", prop_choice);
+		PrintToChat(client, "你建造了 \x04%s 但你的点数并没有进行任何花费!", prop_choice);
 	}
 	decl Ent;   
 	PrecacheModel(modelname,true);
@@ -1593,7 +1593,7 @@ OnButtonPress(client, button, buttons)
 		new Handle:kv = CreateKeyValues("Props");
 		FileToKeyValues(kv, textPath);
 		om_public_prop_menu = CreateMenu(Public_Prop_Menu_Handler);
-		SetMenuTitle(om_public_prop_menu, "Construct | Credits: %d", iCredits[client]);
+		SetMenuTitle(om_public_prop_menu, "建筑 | 点数: %d", iCredits[client]);
 		PopLoop(kv, client);
 		DisplayMenu(om_public_prop_menu, client, MENU_TIME_FOREVER);
 		
