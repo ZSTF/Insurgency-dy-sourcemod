@@ -1535,8 +1535,8 @@ public Action:Timer_Enemies_Remaining(Handle:Timer)
 	// Announce
 	decl String:textToPrintChat[64];
 	decl String:textToPrint[64];
-		Format(textToPrintChat, sizeof(textToPrintChat), "[INTEL]Enemies alive: %d | Enemy reinforcements left: %d", alive_insurgents, g_iRemaining_lives_team_ins);
-		Format(textToPrint, sizeof(textToPrint), "[INTEL]Enemies alive: %d | Enemy reinforcements left: %d", alive_insurgents ,g_iRemaining_lives_team_ins);
+		Format(textToPrintChat, sizeof(textToPrintChat), "敌军存活：%d | 敌军剩余增援：%d", alive_insurgents, g_iRemaining_lives_team_ins);
+		Format(textToPrint, sizeof(textToPrint), "敌军存活：%d | 敌军剩余增援：%d", alive_insurgents ,g_iRemaining_lives_team_ins);
 	PrintHintTextToAll(textToPrint);
 	PrintToChatAll(textToPrintChat);
 	}
@@ -1545,8 +1545,8 @@ public Action:Timer_Enemies_Remaining(Handle:Timer)
 		// Announce
 		decl String:textToPrintChat[64];
 		decl String:textToPrint[64];
-		Format(textToPrintChat, sizeof(textToPrintChat), "[INTEL]Comms are down, build jammer to get enemy reports.");
-		Format(textToPrint, sizeof(textToPrintChat), "[INTEL]Comms are down, build jammer to get enemy reports.");
+		Format(textToPrintChat, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
+		Format(textToPrint, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
 		PrintHintTextToAll(textToPrint);
 		PrintToChatAll(textToPrintChat);
 	}
@@ -1582,9 +1582,9 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 				
 				//Format(textToPrintChat, sizeof(textToPrintChat), "[INTEL]Friendlies spawn on Counter-Attacks, Capture the Point!");
 			if (g_isHunt == 1)
-					Format(textToPrint, sizeof(textToPrint), "[INTEL]Enemies reinforce in %d seconds | Kill rest/blow cache!", g_iReinforceTime);
+					Format(textToPrint, sizeof(textToPrint), "敌军增援将在 %d 秒后到达 | 尽快占领检查点", g_iReinforceTime);
 			else
-					Format(textToPrint, sizeof(textToPrint), "[INTEL]Enemies reinforce in %d seconds | Capture the point soon!", g_iReinforceTime);
+					Format(textToPrint, sizeof(textToPrint), "敌军增援将在 %d 秒后到达 | 尽快占领检查点", g_iReinforceTime);
 
 			PrintHintTextToAll(textToPrint);
 			if (g_iReinforceTime <= 60)
@@ -1598,8 +1598,8 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 				if (fCommsChance > 50)
 				{
 					// Announce
-					Format(textToPrintChat, sizeof(textToPrintChat), "[INTEL]Comms are down, build jammer to get enemy reports.");
-					Format(textToPrint, sizeof(textToPrintChat), "[INTEL]Comms are down, build jammer to get enemy reports.");
+					Format(textToPrintChat, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
+					Format(textToPrint, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
 					PrintHintTextToAll(textToPrint);
 					PrintToChatAll(textToPrintChat);
 				}
@@ -1611,9 +1611,9 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 			
 			//Format(textToPrintChat, sizeof(textToPrintChat), "[INTEL]Friendlies spawn on Counter-Attacks, Capture the Point!");
 			if (g_isHunt == 1)
-				Format(textToPrint, sizeof(textToPrint), "[INTEL]Enemies reinforce in %d seconds | Kill remaining/blow cache!", g_iReinforceTime);
+				Format(textToPrint, sizeof(textToPrint), "敌军增援将在 %d 秒后到达 | 尽快占领检查点", g_iReinforceTime);
 			else
-				Format(textToPrint, sizeof(textToPrint), "[INTEL]Enemies reinforce in %d seconds | Capture the point soon!", g_iReinforceTime);
+				Format(textToPrint, sizeof(textToPrint), "敌军增援将在 %d 秒后到达 | 尽快占领检查点", g_iReinforceTime);
 
 			PrintHintTextToAll(textToPrint);
 			//PrintToChatAll(textToPrintChat);
@@ -1633,7 +1633,7 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 					new iBotCount = GetTeamInsCount();
 					// Add bots	
 					g_iRemaining_lives_team_ins = g_iRemaining_lives_team_ins + iBotCount;
-					Format(textToPrint, sizeof(textToPrint), "[INTEL]Enemy Reinforcements Added to Existing Reinforcements!");
+					Format(textToPrint, sizeof(textToPrint), "敌军增援已加强");
 					if (validAntenna != -1 || g_jammerRequired == 0)
 					PrintHintTextToAll(textToPrint);
 					else
@@ -1641,8 +1641,8 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 						new fCommsChance = GetRandomInt(1, 100);
 						if (fCommsChance > 50)
 						{
-							Format(textToPrintChat, sizeof(textToPrintChat), "[INTEL]Comms are down, build jammer to get enemy reports.");
-							Format(textToPrint, sizeof(textToPrintChat), "[INTEL]Comms are down, build jammer to get enemy reports.");
+							Format(textToPrintChat, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
+							Format(textToPrint, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
 							PrintHintTextToAll(textToPrint);
 							PrintToChatAll(textToPrintChat);
 						}
@@ -1670,7 +1670,7 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 				}
 				else
 				{
-					Format(textToPrint, sizeof(textToPrint), "[INTEL]Enemy Reinforcements at Maximum Capacity");
+					Format(textToPrint, sizeof(textToPrint), "敌军增援已到达最大值");
 					if (validAntenna != -1 || g_jammerRequired == 0)
 					PrintHintTextToAll(textToPrint);
 					else
@@ -1678,8 +1678,8 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 						new fCommsChance = GetRandomInt(1, 100);
 						if (fCommsChance > 50)
 						{
-							Format(textToPrintChat, sizeof(textToPrintChat), "[INTEL]Comms are down, build jammer to get enemy reports.");
-							Format(textToPrint, sizeof(textToPrintChat), "[INTEL]Comms are down, build jammer to get enemy reports.");
+							Format(textToPrintChat, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
+							Format(textToPrint, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
 							PrintHintTextToAll(textToPrint);
 							PrintToChatAll(textToPrintChat);
 						}
@@ -1719,7 +1719,7 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 				//new fRandomInt = GetRandomInt(1, 4);
 				
 				decl String:textToPrint[64];
-				Format(textToPrint, sizeof(textToPrint), "[INTEL]Enemy Reinforcements Have Arrived!");
+				Format(textToPrint, sizeof(textToPrint), "敌军增援已到达");
 				if (validAntenna != -1 || g_jammerRequired == 0)
 				PrintHintTextToAll(textToPrint);
 				else
@@ -1727,8 +1727,8 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 					new fCommsChance = GetRandomInt(1, 100);
 					if (fCommsChance > 50)
 					{
-						Format(textToPrintChat, sizeof(textToPrintChat), "[INTEL]Comms are down, build jammer to get enemy reports.");
-						Format(textToPrint, sizeof(textToPrintChat), "[INTEL]Comms are down, build jammer to get enemy reports.");
+						Format(textToPrintChat, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
+						Format(textToPrint, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
 						PrintHintTextToAll(textToPrint);
 						PrintToChatAll(textToPrintChat);
 			}
@@ -2975,8 +2975,8 @@ public Action:Event_ControlPointCaptured_Pre(Handle:event, const String:name[], 
 		SetConVarInt(cvar, 1, true, false);
 		if (largeCounterEnabled)
 		{
-			PrintHintTextToAll("[INTEL]: Enemy forces are sending a large counter-attack your way!  Get ready to defend!");
-			PrintToChatAll("[INTEL]: Enemy forces are sending a large counter-attack your way!  Get ready to defend!");
+			PrintHintTextToAll("大量的敌军正在反攻，准备好防守检查点");
+			PrintToChatAll("大量的敌军正在反攻，准备好防守检查点");
 		}
 		// Call music timer
 		//CreateTimer(COUNTER_ATTACK_MUSIC_DURATION, Timer_CounterAttackSound);
@@ -3187,8 +3187,8 @@ public Action:Event_ObjectDestroyed_Pre(Handle:event, const String:name[], bool:
 		SetConVarInt(cvar, 1, true, false);
 		if (largeCounterEnabled)
 		{
-			PrintHintTextToAll("[INTEL]: Enemy forces are sending a large counter-attack your way!  Get ready to defend!");
-			PrintToChatAll("[INTEL]: Enemy forces are sending a large counter-attack your way!  Get ready to defend!");
+			PrintHintTextToAll("大量的敌军正在反攻，准备好防守检查点");
+			PrintToChatAll("大量的敌军正在反攻，准备好防守检查点");
 		}
 		// Call music timer
 		//CreateTimer(COUNTER_ATTACK_MUSIC_DURATION, Timer_CounterAttackSound);
