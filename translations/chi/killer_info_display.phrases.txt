@@ -1,0 +1,118 @@
+"Phrases"
+{
+	"name"
+	{
+		"chi"		"凶手信息显示"
+	}
+
+	"chat_basic"
+	{
+		"#format"	"{1:N},{2:s},{3:s},{4:d},{5:s}"
+		"chi"		"{T}{1} {N}杀死了你{2}{3} 他还有 {T}{4} {N}点HP{5} 剩余"
+	}
+
+	"chat_weapon"
+	{
+		"#format"	"{1:s}"
+		"chi"		"使用 {T}{1}{N}"
+	}
+
+	"chat_distance"
+	{
+		"#format"	"{1:.1f},{2:s}"
+		"chi"		"在 {T}{1} {N}{2} 之外"
+	}
+
+	"chat_armor"
+	{
+		"#format"	"{1:d},{2:t}"
+		"chi"		"和 {T}{1} {N}{2}"
+	}
+
+	"panel_killer"
+	{
+		"#format"	"{1:N}"
+		"chi"		"{1} 杀死了你"
+	}
+
+	"panel_weapon"
+	{
+		"#format"	"{1:s}"
+		"chi"		"武器:    {1}"
+	}
+
+	"panel_health"
+	{
+		"#format"	"{1:d}"
+		"chi"		"HP:   剩余 {1} 点"
+	}
+
+	"panel_armor"
+	{
+		"#format"	"{1:t},{2:d}"
+		"chi"		"{1}:  剩余 {2} 点"
+	}
+
+	"panel_distance"
+	{
+		"#format"	"{1:.1f},{2:s}"
+		"chi"		"距离:    {1} {2}"
+	}
+
+	"armor"
+	{
+		"chi"		"护甲"
+	}
+
+	"suitpower"
+	{
+		"chi"		"Suitpower"
+	}
+
+	"dominated"
+	{
+		"#format"	"{1:N}"
+		"chi"		"{T}{1} {G}主宰了比赛 !"
+	}
+
+	"revenge"
+	{
+		"#format"	"{1:N}"
+		"chi"		"{T}{1} {G}进行了复仇 !"
+	}
+
+	"meters"
+	{
+		"chi"		"米"
+	}
+
+	"feet"
+	{
+		"chi"		"步"
+	}
+
+	"announcement"
+	{
+		"chi"		"{OG}输入 {T}!settings {OG}来打开设置菜单或者输入 {T}!killerinfo {OG}来打开/关闭本插件."
+	}
+
+	"kid_enabled"
+	{
+		"chi"		"打开凶手显示插件."
+	}
+
+	"kid_disabled"
+	{
+		"chi"		"关闭凶手显示插件."
+	}
+
+	"enabled"
+	{
+		"chi"		"打开 "
+	}
+
+	"disabled"
+	{
+		"chi"		"关闭"
+	}
+}

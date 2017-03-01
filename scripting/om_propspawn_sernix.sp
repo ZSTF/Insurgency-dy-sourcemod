@@ -258,7 +258,7 @@ public OnConVarChanged(Handle:convar, const String:oldValue[], const String:newV
 public Action:Command_Credits(client, args)
 {
 	new tempCredits = iCredits[client];
-	PrintToChat(client, "You currently have %d credits!", tempCredits);
+	PrintToChat(client, "你现在拥有 %d 点点数!", tempCredits);
 }
 
 public OnClientPutInServer(client) {
@@ -967,7 +967,7 @@ public Action:AdminRemovePropAim(client, args)
 	}
 	else
 	{
-		PrintToChat(client, "You can't delete this prop! It wasn't created by the plugin!");
+		PrintToChat(client, "你不能删除这个物体! 它不是由插件造出来的!");
 	}
 	
 	return Plugin_Handled;
@@ -999,7 +999,7 @@ public Action:AdminCreditControl(client, args)
 	GetCmdArg(2, NewCredits, sizeof(NewCredits));
 	new ModCredits = StringToInt(NewCredits);
 	iCredits[target] += ModCredits;
-	PrintToChat(target, "You now have %d credits!", iCredits[target]);
+	PrintToChat(target, "你现在拥有 %d 点点数!", iCredits[target]);
 	LogAction(client, -1, "\"%s\" added %d credits to \"%s\"", SteamID, ModCredits, targetName);
 	
 	return Plugin_Handled;
