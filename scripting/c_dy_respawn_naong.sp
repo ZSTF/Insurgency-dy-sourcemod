@@ -1545,8 +1545,8 @@ public Action:Timer_Enemies_Remaining(Handle:Timer)
 		// Announce
 		decl String:textToPrintChat[64];
 		decl String:textToPrint[64];
-		Format(textToPrintChat, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
-		Format(textToPrint, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
+		Format(textToPrintChat, sizeof(textToPrintChat), "通讯故障，架设电台(IED干扰器)获取敌军情报");
+		Format(textToPrint, sizeof(textToPrintChat), "通讯故障，架设电台(IED干扰器)获取敌军情报");
 		PrintHintTextToAll(textToPrint);
 		PrintToChatAll(textToPrintChat);
 	}
@@ -1598,8 +1598,8 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 				if (fCommsChance > 50)
 				{
 					// Announce
-					Format(textToPrintChat, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
-					Format(textToPrint, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
+					Format(textToPrintChat, sizeof(textToPrintChat), "通讯故障，架设电台(IED干扰器)获取敌军情报");
+					Format(textToPrint, sizeof(textToPrintChat), "通讯故障，架设电台(IED干扰器)获取敌军情报");
 					PrintHintTextToAll(textToPrint);
 					PrintToChatAll(textToPrintChat);
 				}
@@ -1641,8 +1641,8 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 						new fCommsChance = GetRandomInt(1, 100);
 						if (fCommsChance > 50)
 						{
-							Format(textToPrintChat, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
-							Format(textToPrint, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
+							Format(textToPrintChat, sizeof(textToPrintChat), "通讯故障，架设电台(IED干扰器)获取敌军情报");
+							Format(textToPrint, sizeof(textToPrintChat), "通讯故障，架设电台(IED干扰器)获取敌军情报");
 							PrintHintTextToAll(textToPrint);
 							PrintToChatAll(textToPrintChat);
 						}
@@ -1678,8 +1678,8 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 						new fCommsChance = GetRandomInt(1, 100);
 						if (fCommsChance > 50)
 						{
-							Format(textToPrintChat, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
-							Format(textToPrint, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
+							Format(textToPrintChat, sizeof(textToPrintChat), "通讯故障，架设电台(IED干扰器)获取敌军情报");
+							Format(textToPrint, sizeof(textToPrintChat), "通讯故障，架设电台(IED干扰器)获取敌军情报");
 							PrintHintTextToAll(textToPrint);
 							PrintToChatAll(textToPrintChat);
 						}
@@ -1727,8 +1727,8 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 					new fCommsChance = GetRandomInt(1, 100);
 					if (fCommsChance > 50)
 					{
-						Format(textToPrintChat, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
-						Format(textToPrint, sizeof(textToPrintChat), "通讯故障，架设电台获取敌军情报");
+						Format(textToPrintChat, sizeof(textToPrintChat), "通讯故障，架设电台(IED干扰器)获取敌军情报");
+						Format(textToPrint, sizeof(textToPrintChat), "通讯故障，架设电台(IED干扰器)获取敌军情报");
 						PrintHintTextToAll(textToPrint);
 						PrintToChatAll(textToPrintChat);
 			}
