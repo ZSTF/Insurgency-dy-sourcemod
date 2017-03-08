@@ -212,6 +212,13 @@ new
 	Handle:sm_respawn_lives_team_ins_player_count_16 = INVALID_HANDLE,
 	Handle:sm_respawn_lives_team_ins_player_count_17 = INVALID_HANDLE,
 	Handle:sm_respawn_lives_team_ins_player_count_18 = INVALID_HANDLE,
+	Handle:sm_respawn_lives_team_ins_player_count_19 = INVALID_HANDLE,
+	Handle:sm_respawn_lives_team_ins_player_count_20 = INVALID_HANDLE,
+	Handle:sm_respawn_lives_team_ins_player_count_21 = INVALID_HANDLE,
+	Handle:sm_respawn_lives_team_ins_player_count_22 = INVALID_HANDLE,
+	Handle:sm_respawn_lives_team_ins_player_count_23 = INVALID_HANDLE,
+	Handle:sm_respawn_lives_team_ins_player_count_24 = INVALID_HANDLE,
+	Handle:sm_respawn_lives_team_ins_player_count_25 = INVALID_HANDLE,
 	
 	// Fatal dead
 	Handle:sm_respawn_fatal_chance = INVALID_HANDLE,
@@ -581,6 +588,20 @@ public OnPluginStart()
 		"85", "Total bot count (when player count is 17)(sm_respawn_type_team_ins must be 2)");
 	sm_respawn_lives_team_ins_player_count_18 = CreateConVar("sm_respawn_lives_team_ins_player_count_18", 
 		"90", "Total bot count (when player count is 18)(sm_respawn_type_team_ins must be 2)");
+	sm_respawn_lives_team_ins_player_count_19 = CreateConVar("sm_respawn_lives_team_ins_player_count_19", 
+		"90", "Total bot count (when player count is 19)(sm_respawn_type_team_ins must be 2)");
+	sm_respawn_lives_team_ins_player_count_20 = CreateConVar("sm_respawn_lives_team_ins_player_count_20", 
+		"90", "Total bot count (when player count is 20)(sm_respawn_type_team_ins must be 2)");
+	sm_respawn_lives_team_ins_player_count_21 = CreateConVar("sm_respawn_lives_team_ins_player_count_21", 
+		"90", "Total bot count (when player count is 21)(sm_respawn_type_team_ins must be 2)");
+	sm_respawn_lives_team_ins_player_count_22 = CreateConVar("sm_respawn_lives_team_ins_player_count_22", 
+		"90", "Total bot count (when player count is 22)(sm_respawn_type_team_ins must be 2)");
+	sm_respawn_lives_team_ins_player_count_23 = CreateConVar("sm_respawn_lives_team_ins_player_count_23", 
+		"90", "Total bot count (when player count is 23)(sm_respawn_type_team_ins must be 2)");
+	sm_respawn_lives_team_ins_player_count_24 = CreateConVar("sm_respawn_lives_team_ins_player_count_24", 
+		"90", "Total bot count (when player count is 24)(sm_respawn_type_team_ins must be 2)");
+	sm_respawn_lives_team_ins_player_count_25 = CreateConVar("sm_respawn_lives_team_ins_player_count_25", 
+		"90", "Total bot count (when player count is 25)(sm_respawn_type_team_ins must be 2)");
 	
 	// Fatally death
 	sm_respawn_fatal_chance = CreateConVar("sm_respawn_fatal_chance", "0.20", "Chance for a kill to be fatal, 0.6 default = 60% chance to be fatal (To disable set 0.0)");
@@ -1017,6 +1038,13 @@ void UpdateRespawnCvars()
 			case 16: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_16);
 			case 17: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_17);
 			case 18: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_18);
+			case 19: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_19);
+			case 20: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_20);
+			case 21: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_21);
+			case 22: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_22);
+			case 23: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_23);
+			case 24: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_24);
+			case 25: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_25);
 		}
 		
 		// If not set, use default
@@ -5672,7 +5700,7 @@ stock GetTeamSecCount() {
 				clients++;
 		}
 	}
-	return clients > 18 ? 18 : clients;
+	return clients > 25 ? 25 : clients;
 }
 
 // Get real client count
