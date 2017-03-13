@@ -186,6 +186,13 @@ new
 	Handle:sm_respawn_delay_team_sec_player_count_16 = INVALID_HANDLE,
 	Handle:sm_respawn_delay_team_sec_player_count_17 = INVALID_HANDLE,
 	Handle:sm_respawn_delay_team_sec_player_count_18 = INVALID_HANDLE,
+	Handle:sm_respawn_delay_team_sec_player_count_19 = INVALID_HANDLE,
+	Handle:sm_respawn_delay_team_sec_player_count_20 = INVALID_HANDLE,
+	Handle:sm_respawn_delay_team_sec_player_count_21 = INVALID_HANDLE,
+	Handle:sm_respawn_delay_team_sec_player_count_22 = INVALID_HANDLE,
+	Handle:sm_respawn_delay_team_sec_player_count_23 = INVALID_HANDLE,
+	Handle:sm_respawn_delay_team_sec_player_count_24 = INVALID_HANDLE,
+	Handle:sm_respawn_delay_team_sec_player_count_25 = INVALID_HANDLE,
 	
 	// Respawn type
 	Handle:sm_respawn_type_team_ins = INVALID_HANDLE,
@@ -540,6 +547,20 @@ public OnPluginStart()
 		"120.0", "How many seconds to delay the respawn (when player count is 17)");
 	sm_respawn_delay_team_sec_player_count_18 = CreateConVar("sm_respawn_delay_team_sec_player_count_18", 
 		"120.0", "How many seconds to delay the respawn (when player count is 18)");
+	sm_respawn_delay_team_sec_player_count_19 = CreateConVar("sm_respawn_delay_team_sec_player_count_19", 
+		"130.0", "How many seconds to delay the respawn (when player count is 19)");
+	sm_respawn_delay_team_sec_player_count_20 = CreateConVar("sm_respawn_delay_team_sec_player_count_20", 
+		"130.0", "How many seconds to delay the respawn (when player count is 20)");
+	sm_respawn_delay_team_sec_player_count_21 = CreateConVar("sm_respawn_delay_team_sec_player_count_21", 
+		"140.0", "How many seconds to delay the respawn (when player count is 21)");
+	sm_respawn_delay_team_sec_player_count_22 = CreateConVar("sm_respawn_delay_team_sec_player_count_22", 
+		"140.0", "How many seconds to delay the respawn (when player count is 22)");
+	sm_respawn_delay_team_sec_player_count_23 = CreateConVar("sm_respawn_delay_team_sec_player_count_23", 
+		"150.0", "How many seconds to delay the respawn (when player count is 23)");
+	sm_respawn_delay_team_sec_player_count_24 = CreateConVar("sm_respawn_delay_team_sec_player_count_24", 
+		"150.0", "How many seconds to delay the respawn (when player count is 24)");
+	sm_respawn_delay_team_sec_player_count_25 = CreateConVar("sm_respawn_delay_team_sec_player_count_25", 
+		"150.0", "How many seconds to delay the respawn (when player count is 25)");
 	
 	// Respawn type
 	sm_respawn_type_team_sec = CreateConVar("sm_respawn_type_team_sec", 
@@ -981,6 +1002,13 @@ void UpdateRespawnCvars()
 		case 16: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_16);
 		case 17: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_17);
 		case 18: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_18);
+		case 19: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_19);
+		case 20: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_20);
+		case 21: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_21);
+		case 22: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_22);
+		case 23: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_23);
+		case 24: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_24);
+		case 25: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_25);
 	}
 	// If not set use default
 	if (g_iRespawnSeconds == -1)
