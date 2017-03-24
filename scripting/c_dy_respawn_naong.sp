@@ -193,6 +193,11 @@ new
 	Handle:sm_respawn_delay_team_sec_player_count_23 = INVALID_HANDLE,
 	Handle:sm_respawn_delay_team_sec_player_count_24 = INVALID_HANDLE,
 	Handle:sm_respawn_delay_team_sec_player_count_25 = INVALID_HANDLE,
+	Handle:sm_respawn_delay_team_sec_player_count_26 = INVALID_HANDLE,
+	Handle:sm_respawn_delay_team_sec_player_count_27 = INVALID_HANDLE,
+	Handle:sm_respawn_delay_team_sec_player_count_28 = INVALID_HANDLE,
+	Handle:sm_respawn_delay_team_sec_player_count_29 = INVALID_HANDLE,
+	Handle:sm_respawn_delay_team_sec_player_count_30 = INVALID_HANDLE,
 	
 	// Respawn type
 	Handle:sm_respawn_type_team_ins = INVALID_HANDLE,
@@ -226,6 +231,11 @@ new
 	Handle:sm_respawn_lives_team_ins_player_count_23 = INVALID_HANDLE,
 	Handle:sm_respawn_lives_team_ins_player_count_24 = INVALID_HANDLE,
 	Handle:sm_respawn_lives_team_ins_player_count_25 = INVALID_HANDLE,
+	Handle:sm_respawn_lives_team_ins_player_count_26 = INVALID_HANDLE,
+	Handle:sm_respawn_lives_team_ins_player_count_27 = INVALID_HANDLE,
+	Handle:sm_respawn_lives_team_ins_player_count_28 = INVALID_HANDLE,
+	Handle:sm_respawn_lives_team_ins_player_count_29 = INVALID_HANDLE,
+	Handle:sm_respawn_lives_team_ins_player_count_30 = INVALID_HANDLE,
 	
 	// Fatal dead
 	Handle:sm_respawn_fatal_chance = INVALID_HANDLE,
@@ -561,6 +571,16 @@ public OnPluginStart()
 		"150.0", "How many seconds to delay the respawn (when player count is 24)");
 	sm_respawn_delay_team_sec_player_count_25 = CreateConVar("sm_respawn_delay_team_sec_player_count_25", 
 		"150.0", "How many seconds to delay the respawn (when player count is 25)");
+	sm_respawn_delay_team_sec_player_count_26 = CreateConVar("sm_respawn_delay_team_sec_player_count_26", 
+		"150.0", "How many seconds to delay the respawn (when player count is 26)");
+	sm_respawn_delay_team_sec_player_count_27 = CreateConVar("sm_respawn_delay_team_sec_player_count_27", 
+		"150.0", "How many seconds to delay the respawn (when player count is 27)");
+	sm_respawn_delay_team_sec_player_count_28 = CreateConVar("sm_respawn_delay_team_sec_player_count_28", 
+		"150.0", "How many seconds to delay the respawn (when player count is 28)");
+	sm_respawn_delay_team_sec_player_count_29 = CreateConVar("sm_respawn_delay_team_sec_player_count_29", 
+		"150.0", "How many seconds to delay the respawn (when player count is 29)");
+	sm_respawn_delay_team_sec_player_count_30 = CreateConVar("sm_respawn_delay_team_sec_player_count_30", 
+		"150.0", "How many seconds to delay the respawn (when player count is 30)");
 	
 	// Respawn type
 	sm_respawn_type_team_sec = CreateConVar("sm_respawn_type_team_sec", 
@@ -623,6 +643,16 @@ public OnPluginStart()
 		"90", "Total bot count (when player count is 24)(sm_respawn_type_team_ins must be 2)");
 	sm_respawn_lives_team_ins_player_count_25 = CreateConVar("sm_respawn_lives_team_ins_player_count_25", 
 		"90", "Total bot count (when player count is 25)(sm_respawn_type_team_ins must be 2)");
+	sm_respawn_lives_team_ins_player_count_26 = CreateConVar("sm_respawn_lives_team_ins_player_count_26", 
+		"90", "Total bot count (when player count is 26)(sm_respawn_type_team_ins must be 2)");
+	sm_respawn_lives_team_ins_player_count_27 = CreateConVar("sm_respawn_lives_team_ins_player_count_27", 
+		"90", "Total bot count (when player count is 27)(sm_respawn_type_team_ins must be 2)");
+	sm_respawn_lives_team_ins_player_count_28 = CreateConVar("sm_respawn_lives_team_ins_player_count_28", 
+		"90", "Total bot count (when player count is 28)(sm_respawn_type_team_ins must be 2)");
+	sm_respawn_lives_team_ins_player_count_29 = CreateConVar("sm_respawn_lives_team_ins_player_count_29", 
+		"90", "Total bot count (when player count is 29)(sm_respawn_type_team_ins must be 2)");
+	sm_respawn_lives_team_ins_player_count_30 = CreateConVar("sm_respawn_lives_team_ins_player_count_30", 
+		"90", "Total bot count (when player count is 30)(sm_respawn_type_team_ins must be 2)");
 	
 	// Fatally death
 	sm_respawn_fatal_chance = CreateConVar("sm_respawn_fatal_chance", "0.20", "Chance for a kill to be fatal, 0.6 default = 60% chance to be fatal (To disable set 0.0)");
@@ -1009,6 +1039,11 @@ void UpdateRespawnCvars()
 		case 23: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_23);
 		case 24: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_24);
 		case 25: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_25);
+		case 26: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_26);
+		case 27: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_27);
+		case 28: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_28);
+		case 29: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_29);
+		case 30: g_iRespawnSeconds = GetConVarInt(sm_respawn_delay_team_sec_player_count_30);
 	}
 	// If not set use default
 	if (g_iRespawnSeconds == -1)
@@ -1073,6 +1108,11 @@ void UpdateRespawnCvars()
 			case 23: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_23);
 			case 24: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_24);
 			case 25: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_25);
+			case 26: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_26);
+			case 27: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_27);
+			case 28: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_28);
+			case 29: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_29);
+			case 30: g_iRespawn_lives_team_ins = GetConVarInt(sm_respawn_lives_team_ins_player_count_30);
 		}
 		
 		// If not set, use default
@@ -5752,7 +5792,7 @@ stock GetTeamSecCount() {
 				clients++;
 		}
 	}
-	return clients > 25 ? 25 : clients;
+	return clients > 30 ? 30 : clients;
 }
 
 // Get real client count
