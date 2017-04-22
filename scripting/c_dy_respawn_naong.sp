@@ -107,6 +107,7 @@ new
 	Float:g_fRagdollPosition[MAXPLAYERS+1][3],
 	Float:g_vecOrigin[MAXPLAYERS+1][3],
 	g_iPlayerBGroups[MAXPLAYERS+1],
+	Float:g_spawnFrandom[MAXPLAYERS+1],
 	Float:g_fRespawnPosition[3];
 
 //Ammo Amounts
@@ -406,7 +407,6 @@ new
 	Float:g_flMaxObjectiveDistanceNav,
 	Float:g_flSpawnAttackDelay,
 	Float:g_flMinCounterattackDistance,
-	Float:g_tMinPlayerDistMult,
 
 	//Elite bots Counters
 	g_ins_bot_count_checkpoint_max_org,
@@ -1304,7 +1304,7 @@ void Dynamic_Loadouts()
 {
 	new Float:fRandom = GetRandomFloat(0.0, 1.0);
 	new Handle:hTheaterOverride = FindConVar("mp_theater_override");
-	SetConVarString(hTheaterOverride, "dy_gnalvl_coop_usmc_vanilla", true, false);
+	SetConVarString(hTheaterOverride, "dy_gnalvl_coop_usmc", true, false);
 	
 	//Occurs counter attack
 	if (fRandom >= 0.0 && fRandom < 0.5)
@@ -1608,8 +1608,8 @@ public Action:Timer_EliteBots(Handle:Timer)
 		}
 		if (g_isEliteCounter == 1)
 		{
-			PrintHintTextToAll("敌人派出了精英部队来进行反攻!");
-			PrintToChatAll("敌人派出了精英部队来进行反攻!");
+			//PrintHintTextToAll("[INTEL]ENEMY FORCES ARE SENDING ELITE UNITS TO COUNTER!");
+			//PrintToChatAll("[INTEL]ENEMY FORCES ARE SENDING ELITE UNITS TO COUNTER!");
 			// if (validAntenna != -1 || g_jammerRequired == 0)
 			// {
 			// 	// Announce
@@ -2346,6 +2346,17 @@ CheckSpawnPoint(Float:vecSpawn[3],client,Float:tObjectiveDistance,Int:m_nActiveP
 	new Float:distance,Float:furthest,Float:closest=-1.0;
 	new Float:vecOrigin[3];
 	GetClientAbsOrigin(client,vecOrigin);
+	new Float:tMinPlayerDistMult = 0;
+
+	new acp = (Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex") - 1);
+	new acp2 = m_nActivePushPointIndex;
+	//new ncp = Ins_ObjectiveResource_GetProp("m_iNumControlPoints");
+	if (acp == acp2)
+	{
+		tMinPlayerDistMult = 2000;
+		PrintToServer("INCREASE SPAWN DISTANCE | acp: %d acp2 %d", acp, acp2);
+	}
+
 	//Update player spawns before we check against them
 	UpdatePlayerOrigins();
 	//Lets go through checks to find a valid spawn point
@@ -2368,7 +2379,7 @@ CheckSpawnPoint(Float:vecSpawn[3],client,Float:tObjectiveDistance,Int:m_nActiveP
 		
 		if (GetClientTeam(iTarget) != m_iTeam) {
 			// If we are too close
-			if (distance < (g_flMinPlayerDistance + g_tMinPlayerDistMult)) {
+			if (distance < (g_flMinPlayerDistance + tMinPlayerDistMult)) {
 				 return 0;
 			}
 			// If the player can see the spawn point (divided CanSeeVector to slightly reduce strictness)
@@ -2463,10 +2474,10 @@ CheckSpawnPointPlayers(Float:vecSpawn[3],client) {
 
 
 	// Get the number of control points
-	new ncp = Ins_ObjectiveResource_GetProp("m_iNumControlPoints");
+	//new ncp = Ins_ObjectiveResource_GetProp("m_iNumControlPoints");
 	
 	// Get active push point
-	new acp = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
+	//new acp = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
 
 	//If any player is too far
 	if (closest > g_flMaxPlayerDistance) {
@@ -2515,35 +2526,35 @@ public GetPushPointIndex(Float:fRandomFloat)
 	//new Float:distance = GetVectorDistance(vecSpawn,m_vCPPositions[m_nActivePushPointIndex]);
 	//Check last point	
  		
-
- 	g_tMinPlayerDistMult = 0; 
-	if (((acp+1) == ncp) || (Ins_InCounterAttack()) || (m_nActivePushPointIndex > 1))
+	if (((acp+1) >= ncp) || (Ins_InCounterAttack()) || (m_nActivePushPointIndex > 1))
  	{
  		//PrintToServer("###POINT_MOD### | fRandomFloat: %f | g_dynamicSpawnCounter_Perc %f ",fRandomFloat, g_dynamicSpawnCounter_Perc);
- 		if ((acp+1) == ncp)
+ 		if ((acp+1) >= ncp)
  			m_nActivePushPointIndex--;
- 		else if (Ins_InCounterAttack() && (acp+1) != ncp)
+ 		else
  		{
- 			if (fRandomFloat <= 0.5 && m_nActivePushPointIndex > 1)
- 				m_nActivePushPointIndex--;
- 			else
- 				m_nActivePushPointIndex++;
- 		}
- 		else if (!Ins_InCounterAttack())
- 		{
- 			if (m_nActivePushPointIndex > 1)
- 			{
- 				if (fRandomFloat <= 0.5)
- 				{
- 					m_nActivePushPointIndex-=2;
- 				}
- 				else
- 				{
- 					m_nActivePushPointIndex--; //We increase the minplayer distance if this happens
- 					g_tMinPlayerDistMult = 2000; 
- 				}
- 			}
- 		}
+	 		if (Ins_InCounterAttack() && (acp+1) != ncp)
+	 		{
+	 			if (fRandomFloat <= 0.5 && m_nActivePushPointIndex > 1)
+	 				m_nActivePushPointIndex--;
+	 			else
+	 				m_nActivePushPointIndex++;
+	 		}
+	 		else if (!Ins_InCounterAttack())
+	 		{
+	 			if (m_nActivePushPointIndex > 1)
+	 			{
+	 				if (fRandomFloat <= 0.5)
+	 				{
+	 					m_nActivePushPointIndex++;
+	 				}
+	 				else
+	 				{
+	 					m_nActivePushPointIndex--; //We increase the minplayer distance if this happens
+	 				}
+	 			}
+	 		}
+	 	}
 
  	}
  	return m_nActivePushPointIndex;
@@ -2555,32 +2566,38 @@ float GetSpawnPoint_SpawnPoint(client) {
 	int m_iTeamNum;
 	float vecSpawn[3];
 	float vecOrigin[3];
+	new distance;
 	GetClientAbsOrigin(client,vecOrigin);
 	new Float:fRandomFloat = GetRandomFloat(0, 1.0);
 
+	// Get the number of control points
+	new ncp = Ins_ObjectiveResource_GetProp("m_iNumControlPoints");
+	
+	// Get active push point
+	new acp = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
+
 	new m_nActivePushPointIndex = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
+	if ((Ins_InCounterAttack() && g_spawnFrandom[client] < g_dynamicSpawnCounter_Perc) || (!Ins_InCounterAttack() && g_spawnFrandom[client] < g_dynamicSpawn_Perc && acp > 1))
+		m_nActivePushPointIndex = GetPushPointIndex(fRandomFloat);
 	new point = FindEntityByClassname(-1, "ins_spawnpoint");
 	new Float:tObjectiveDistance = g_flMaxObjectiveDistance;
 	while (point != -1) {
-		new acp = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
-		m_iTeamNum = GetEntProp(point, Prop_Send, "m_iTeamNum");
-		if (m_iTeamNum == m_iTeam) {
+		//m_iTeamNum = GetEntProp(point, Prop_Send, "m_iTeamNum");
+		//if (m_iTeamNum == m_iTeam) {
 			GetEntPropVector(point, Prop_Send, "m_vecOrigin", vecSpawn);
-			m_nActivePushPointIndex = GetPushPointIndex(fRandomFloat);
-
 			Ins_ObjectiveResource_GetPropVector("m_vCPPositions",m_vCPPositions[m_nActivePushPointIndex],m_nActivePushPointIndex);
-			new distance = GetVectorDistance(vecSpawn,m_vCPPositions[m_nActivePushPointIndex]);
+			distance = GetVectorDistance(vecSpawn,m_vCPPositions[m_nActivePushPointIndex]);
 			if (CheckSpawnPoint(vecSpawn,client,tObjectiveDistance,m_nActivePushPointIndex)) {
 				vecSpawn = GetInsSpawnGround(point, vecSpawn);
 				//new m_nActivePushPointIndex = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
-				PrintToServer("FOUND! m_nActivePushPointIndex: %d %N (%d) spawnpoint %d Distance: %f tObjectiveDistance: %f g_flMaxObjectiveDistance %f at (%f, %f, %f)",m_nActivePushPointIndex, client, client, point, distance, tObjectiveDistance, g_flMaxObjectiveDistance, vecSpawn[0], vecSpawn[1], vecSpawn[2]);
+				PrintToServer("FOUND! m_nActivePushPointIndex: %d %N (%d) spawnpoint %d Distance: %f tObjectiveDistance: %f g_flMaxObjectiveDistance %f RAW ACP: %d",m_nActivePushPointIndex, client, client, point, distance, tObjectiveDistance, g_flMaxObjectiveDistance, acp);
 				return vecSpawn;
 			}
 			else
 			{
 				tObjectiveDistance += 4.0;
 			}
-		}
+		//}
 		point = FindEntityByClassname(point, "ins_spawnpoint");
 	}
 	PrintToServer("1st Pass: Could not find acceptable ins_spawnzone for %N (%d)", client, client);
@@ -2588,25 +2605,23 @@ float GetSpawnPoint_SpawnPoint(client) {
 	new point2 = FindEntityByClassname(-1, "ins_spawnpoint");
 	tObjectiveDistance = ((g_flMaxObjectiveDistance + 100) * 4);
 	while (point2 != -1) {
-		new acp = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
-		m_iTeamNum = GetEntProp(point2, Prop_Send, "m_iTeamNum");
-		if (m_iTeamNum == m_iTeam) {
+		//m_iTeamNum = GetEntProp(point2, Prop_Send, "m_iTeamNum");
+		//if (m_iTeamNum == m_iTeam) {
 			GetEntPropVector(point2, Prop_Send, "m_vecOrigin", vecSpawn);
-			m_nActivePushPointIndex = GetPushPointIndex(fRandomFloat);
 
 			Ins_ObjectiveResource_GetPropVector("m_vCPPositions",m_vCPPositions[m_nActivePushPointIndex],m_nActivePushPointIndex);
-			new distance = GetVectorDistance(vecSpawn,m_vCPPositions[m_nActivePushPointIndex]);
+			distance = GetVectorDistance(vecSpawn,m_vCPPositions[m_nActivePushPointIndex]);
 			if (CheckSpawnPoint(vecSpawn,client,tObjectiveDistance,m_nActivePushPointIndex)) {
 				vecSpawn = GetInsSpawnGround(point2, vecSpawn);
 				//new m_nActivePushPointIndex = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
-				PrintToServer("FOUND! m_nActivePushPointIndex: %d %N (%d) spawnpoint %d Distance: %f tObjectiveDistance: %f g_flMaxObjectiveDistance %f at (%f, %f, %f)",m_nActivePushPointIndex, client, client, point2, distance, tObjectiveDistance, g_flMaxObjectiveDistance, vecSpawn[0], vecSpawn[1], vecSpawn[2]);
+				PrintToServer("FOUND! m_nActivePushPointIndex: %d %N (%d) spawnpoint %d Distance: %f tObjectiveDistance: %f g_flMaxObjectiveDistance %f RAW ACP: %d",m_nActivePushPointIndex, client, client, point2, distance, tObjectiveDistance, g_flMaxObjectiveDistance, acp);
 				return vecSpawn;
 			}
 			else
 			{
 				tObjectiveDistance += 4.0;
 			}
-		}
+		//}
 		point2 = FindEntityByClassname(point2, "ins_spawnpoint");
 	}
 	PrintToServer("2nd Pass: Could not find acceptable ins_spawnzone for %N (%d)", client, client);
@@ -2614,28 +2629,67 @@ float GetSpawnPoint_SpawnPoint(client) {
 	new point3 = FindEntityByClassname(-1, "ins_spawnpoint");
 	tObjectiveDistance = ((g_flMaxObjectiveDistance + 100) * 10);
 	while (point3 != -1) {
-		new acp = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
-		m_iTeamNum = GetEntProp(point3, Prop_Send, "m_iTeamNum");
-		if (m_iTeamNum == m_iTeam) {
+		//m_iTeamNum = GetEntProp(point3, Prop_Send, "m_iTeamNum");
+		//if (m_iTeamNum == m_iTeam) {
 			GetEntPropVector(point3, Prop_Send, "m_vecOrigin", vecSpawn);
-			m_nActivePushPointIndex = GetPushPointIndex(fRandomFloat);
-
 			Ins_ObjectiveResource_GetPropVector("m_vCPPositions",m_vCPPositions[m_nActivePushPointIndex],m_nActivePushPointIndex);
-			new distance = GetVectorDistance(vecSpawn,m_vCPPositions[m_nActivePushPointIndex]);
+			distance = GetVectorDistance(vecSpawn,m_vCPPositions[m_nActivePushPointIndex]);
 			if (CheckSpawnPoint(vecSpawn,client,tObjectiveDistance,m_nActivePushPointIndex)) {
 				vecSpawn = GetInsSpawnGround(point3, vecSpawn);
 				//new m_nActivePushPointIndex = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
-				PrintToServer("FOUND! m_nActivePushPointIndex: %d %N (%d) spawnpoint %d Distance: %f tObjectiveDistance: %f g_flMaxObjectiveDistance %f at (%f, %f, %f)",m_nActivePushPointIndex, client, client, point3, distance, tObjectiveDistance, g_flMaxObjectiveDistance, vecSpawn[0], vecSpawn[1], vecSpawn[2]);
+				PrintToServer("FOUND! m_nActivePushPointIndex: %d %N (%d) spawnpoint %d Distance: %f tObjectiveDistance: %f g_flMaxObjectiveDistance %f RAW ACP: %d",m_nActivePushPointIndex, client, client, point3, distance, tObjectiveDistance, g_flMaxObjectiveDistance, acp);
 				return vecSpawn;
 			}
 			else
 			{
 				tObjectiveDistance += 4.0;
 			}
-		}
+		//}
 		point3 = FindEntityByClassname(point3, "ins_spawnpoint");
 	}
 	PrintToServer("3rd Pass: Could not find acceptable ins_spawnzone for %N (%d)", client, client);
+	new pointFinal = FindEntityByClassname(-1, "ins_spawnpoint");
+	tObjectiveDistance = ((g_flMaxObjectiveDistance + 100) * 4);
+	m_nActivePushPointIndex = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
+	//m_nActivePushPointIndex = GetPushPointIndex(fRandomFloat);
+	if (m_nActivePushPointIndex > 1)
+	{	
+		if ((acp+1) >= ncp)
+			m_nActivePushPointIndex--;
+		else
+		{
+			m_nActivePushPointIndex++;
+			// if (fRandomFloat <= 0.3)
+			// {
+			// 	m_nActivePushPointIndex -= 1;
+			// }
+			// else
+			// {
+			// 	m_nActivePushPointIndex++; //We increase the minplayer distance if this happens
+			// }
+		}
+	}
+	while (pointFinal != -1) {
+		//m_iTeamNum = GetEntProp(pointFinal, Prop_Send, "m_iTeamNum");
+		//if (m_iTeamNum == m_iTeam) {
+			GetEntPropVector(pointFinal, Prop_Send, "m_vecOrigin", vecSpawn);
+			
+			Ins_ObjectiveResource_GetPropVector("m_vCPPositions",m_vCPPositions[m_nActivePushPointIndex],m_nActivePushPointIndex);
+			distance = GetVectorDistance(vecSpawn,m_vCPPositions[m_nActivePushPointIndex]);
+			if (CheckSpawnPoint(vecSpawn,client,tObjectiveDistance,m_nActivePushPointIndex)) {
+				vecSpawn = GetInsSpawnGround(pointFinal, vecSpawn);
+				//new m_nActivePushPointIndex = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
+				PrintToServer("FINAL PASS FOUND! m_nActivePushPointIndex: %d %N (%d) spawnpoint %d Distance: %f tObjectiveDistance: %f g_flMaxObjectiveDistance: %f RAW ACP: %d",m_nActivePushPointIndex, client, client, pointFinal, distance, tObjectiveDistance, g_flMaxObjectiveDistance, acp);
+				return vecSpawn;
+			}
+			else
+			{
+				tObjectiveDistance += 4.0;
+			}
+		//}
+		pointFinal = FindEntityByClassname(pointFinal, "ins_spawnpoint");
+	}
+	PrintToServer("Final Pass: Could not find acceptable ins_spawnzone for %N (%d)", client, client);
 	return vecOrigin;
 }
 float GetSpawnPoint(client) {
@@ -2736,10 +2790,11 @@ public Action:Event_Spawn(Handle:event, const String:name[], bool:dontBroadcast)
 	if  (g_playersReady && g_botsReady == 1)
 	{
 		int iCanSpawn = CheckSpawnPointPlayers(vecOrigin,client);
-		new fRandomFloat = GetRandomFloat(0, 1.0);
+		//Global random for spawning
+		g_spawnFrandom[client] = GetRandomFloat(0, 1.0);
 		//InsLog(DEBUG, "Event_Spawn iCanSpawn %d", iCanSpawn);
-		if (!iCanSpawn || (Ins_InCounterAttack() && fRandomFloat < g_dynamicSpawnCounter_Perc) || 
-			(!Ins_InCounterAttack() && fRandomFloat < g_dynamicSpawn_Perc && acp > 1)) {
+		if (!iCanSpawn || (Ins_InCounterAttack() && g_spawnFrandom[client] < g_dynamicSpawnCounter_Perc) || 
+			(!Ins_InCounterAttack() && g_spawnFrandom[client] < g_dynamicSpawn_Perc && acp > 1)) {
 
 			TeleportClient(client);
 			if (client > 0 && IsClientInGame(client) && IsPlayerAlive(client) && IsClientConnected(client))
@@ -3311,7 +3366,7 @@ public Action:Event_ControlPointCaptured_Pre(Handle:event, const String:name[], 
 			EnableDisableEliteBotCvars(1, 0);
 			new tCvar = FindConVar("ins_bot_count_checkpoint_max");
 			new tCvarIntValue = GetConVarInt(FindConVar("ins_bot_count_checkpoint_max"));
-			tCvarIntValue += 4;
+			tCvarIntValue += 5;
 			SetConVarInt(tCvar, tCvarIntValue, true, false);
 		}
 	}
@@ -7293,7 +7348,7 @@ public Action:FireScreamCheckTimer(Handle:timer, any:entity)
 				PlayerFireScreamRand(client);
 				new fRandomInt = GetRandomInt(20, 30);
 				g_plyrFireScreamCoolDown[client] = fRandomInt;
-				//CloseHandle(trace); 
+				//CloseHandle(trace);  
 			}
 		}
 	}
@@ -7772,7 +7827,7 @@ public Check_NearbyMedicsRevive(client, iInjured)
 						woundType = "critical wound";
 					decl String:sBuf[255];
 					// Chat to all
-					Format(sBuf, 255,"\x05%N\x01 revived(assisted) \x03%N from a %s", friendlyMedic, iInjured, woundType);
+					Format(sBuf, 255,"\x05%N\x01 从 %s 中协助救起了 \x03%N", friendlyMedic, iInjured, woundType);
 					PrintToChatAll("%s", sBuf);
 					
 					// Add kill bonus to friendlyMedic
