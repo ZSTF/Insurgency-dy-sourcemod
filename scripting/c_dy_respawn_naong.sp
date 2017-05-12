@@ -21,7 +21,7 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <insurgencydy>
-
+#include <smlib>
 #undef REQUIRE_EXTENSIONS
 #include <cstrike>
 #include <tf2>
@@ -101,13 +101,13 @@ new
 	bool:g_playersReady = false,
 	bool:g_easterEggRound = false,
 	bool:g_easterEggFlag = false,
-	Float:g_removeBotGrenadeChance = 0.5,
+	g_removeBotGrenadeChance = 50,
 	Float:g_fPlayerPosition[MAXPLAYERS+1][3],
 	Float:g_fDeadPosition[MAXPLAYERS+1][3],
 	Float:g_fRagdollPosition[MAXPLAYERS+1][3],
 	Float:g_vecOrigin[MAXPLAYERS+1][3],
 	g_iPlayerBGroups[MAXPLAYERS+1],
-	Float:g_spawnFrandom[MAXPLAYERS+1],
+	g_spawnFrandom[MAXPLAYERS+1],
 	Float:g_fRespawnPosition[3];
 
 //Ammo Amounts
@@ -169,6 +169,7 @@ new
 	
 	// Respawn delay time
 	Handle:sm_respawn_delay_team_ins = INVALID_HANDLE,
+	Handle:sm_respawn_delay_team_ins_special = INVALID_HANDLE,
 	Handle:sm_respawn_delay_team_sec = INVALID_HANDLE,
 	Handle:sm_respawn_delay_team_sec_player_count_01 = INVALID_HANDLE,
 	Handle:sm_respawn_delay_team_sec_player_count_02 = INVALID_HANDLE,
@@ -316,6 +317,7 @@ new
 	Handle:cvarSpawnMode = INVALID_HANDLE, //1 = Spawn in ins_spawnpoints, 2 = any spawnpoints that meets criteria, 0 = only at normal spawnpoints at next objective
 	Handle:cvarMinCounterattackDistance = INVALID_HANDLE, //Min distance from counterattack objective to spawn
 	Handle:cvarMinPlayerDistance = INVALID_HANDLE, //Min/max distance from players to spawn
+	Handle:cvarBackSpawnIncrease = INVALID_HANDLE, //Adds to the minplayerdistance cvar when spawning behind player.
 	Handle:cvarSpawnAttackDelay = INVALID_HANDLE, //Attack delay for spawning bots
 	Handle:cvarMinObjectiveDistance = INVALID_HANDLE, //Min/max distance from next objective to spawn
 	Handle:cvarMaxObjectiveDistance = INVALID_HANDLE, //Min/max distance from next objective to spawn
@@ -343,6 +345,7 @@ new
 	g_iCvar_respawn_type_team_sec,
 	g_iCvar_respawn_reset_type,
 	Float:g_fCvar_respawn_delay_team_ins,
+	Float:g_fCvar_respawn_delay_team_ins_spec,
 	g_iCvar_enable_track_ammo,
 	g_iCvar_counterattack_type,
 	g_iCvar_counterattack_vanilla,
@@ -351,7 +354,7 @@ new
 	
 	//Dynamic Respawn cvars 
 	g_DynamicRespawn_Distance_mult,
-	Float:g_dynamicSpawnCounter_Perc,
+	g_dynamicSpawnCounter_Perc,
 	g_dynamicSpawn_Perc,
 
 	// Fatal dead
@@ -400,6 +403,7 @@ new
 	g_isCheckpoint,
 	g_isHunt,
 	Float:g_flMinPlayerDistance,
+	Float:g_flBackSpawnIncrease,
 	Float:g_flMaxPlayerDistance,
 	Float:g_flCanSeeVectorMultiplier, 
 	Float:g_flMinObjectiveDistance,
@@ -520,6 +524,8 @@ public Plugin:myinfo =
 // Start plugin
 public OnPluginStart()
 {
+	
+    //RegConsoleCmd("sm_test", test); 
 	//Create player array list
 	g_playerArrayList = CreateArray(64);
 	RegConsoleCmd("kill", cmd_kill);
@@ -537,7 +543,7 @@ public OnPluginStart()
 	cvarMinObjectiveDistance = CreateConVar("sm_botspawns_min_objective_distance", "1", "Min distance from next objective to spawn", FCVAR_NOTIFY);
 	cvarMaxObjectiveDistance = CreateConVar("sm_botspawns_max_objective_distance", "2000", "Max distance from next objective to spawn", FCVAR_NOTIFY);
 	cvarMaxObjectiveDistanceNav = CreateConVar("sm_botspawns_max_objective_distance_nav", "2000", "Max distance from next objective to spawn", FCVAR_NOTIFY);
-
+	cvarBackSpawnIncrease = CreateConVar("sm_botspawns_backspawn_increase", "1400.0", "Whenever bot spawn on last point, this is added to minimum player respawn distance to avoid spawning too close to player.", FCVAR_NOTIFY);	
 	cvarSpawnAttackDelay = CreateConVar("sm_botspawns_spawn_attack_delay", "2", "Delay in seconds for spawning bots to wait before firing.", FCVAR_NOTIFY);
 
 	// Nav Mesh Botspawn specific END
@@ -545,6 +551,8 @@ public OnPluginStart()
 	// Respawn delay time
 	sm_respawn_delay_team_ins = CreateConVar("sm_respawn_delay_team_ins", 
 		"1.0", "How many seconds to delay the respawn (bots)");
+	sm_respawn_delay_team_ins_special = CreateConVar("sm_respawn_delay_team_ins_special", 
+		"20.0", "How many seconds to delay the respawn (special bots)");
 	sm_respawn_delay_team_sec = CreateConVar("sm_respawn_delay_team_sec", 
 		"30.0", "How many seconds to delay the respawn (If not set 'sm_respawn_delay_team_sec_player_count_XX' uses this value)");
 	sm_respawn_delay_team_sec_player_count_01 = CreateConVar("sm_respawn_delay_team_sec_player_count_01", 
@@ -701,8 +709,8 @@ public OnPluginStart()
 	
 	//Dynamic respawn mechanics
 	sm_respawn_dynamic_distance_multiplier = CreateConVar("sm_respawn_dynamic_distance_multiplier", "2", "This multiplier is used to make bot distance from points on/off counter attacks more dynamic by making distance closer/farther when bots respawn");
-	sm_respawn_dynamic_spawn_counter_percent = CreateConVar("sm_respawn_dynamic_spawn_counter_percent", "0.4", "Percent of bots that will spawn farther away on a counter attack (basically their more ideal normal spawns)");
-	sm_respawn_dynamic_spawn_percent = CreateConVar("sm_respawn_dynamic_spawn_percent", "0.5", "Percent of bots that will spawn farther away NOT on a counter (basically their more ideal normal spawns)");
+	sm_respawn_dynamic_spawn_counter_percent = CreateConVar("sm_respawn_dynamic_spawn_counter_percent", "40", "Percent of bots that will spawn farther away on a counter attack (basically their more ideal normal spawns)");
+	sm_respawn_dynamic_spawn_percent = CreateConVar("sm_respawn_dynamic_spawn_percent", "5", "Percent of bots that will spawn farther away NOT on a counter (basically their more ideal normal spawns)");
 	
 	// Misc
 	sm_respawn_reset_type = CreateConVar("sm_respawn_reset_type", "0", "Set type of resetting player respawn counts: each round or each objective (0: each round, 1: each objective)");
@@ -832,12 +840,14 @@ public OnPluginStart()
 	HookConVarChange(sm_revive_enabled, EnableChanged);
 	HookConVarChange(sm_respawn_delay_team_sec, CvarChange);
 	HookConVarChange(sm_respawn_delay_team_ins, CvarChange);
+	HookConVarChange(sm_respawn_delay_team_ins_special, CvarChange);
 	HookConVarChange(sm_respawn_lives_team_sec, CvarChange);
 	HookConVarChange(sm_respawn_lives_team_ins, CvarChange);
 	HookConVarChange(sm_respawn_reset_type, CvarChange);
 	HookConVarChange(sm_respawn_type_team_sec, CvarChange);
 	HookConVarChange(sm_respawn_type_team_ins, CvarChange);
 	HookConVarChange(cvarMinPlayerDistance,CvarChange);
+	HookConVarChange(cvarBackSpawnIncrease,CvarChange);
 	HookConVarChange(cvarMaxPlayerDistance,CvarChange);
 	HookConVarChange(cvarCanSeeVectorMultiplier,CvarChange);
 	HookConVarChange(cvarMinObjectiveDistance,CvarChange);
@@ -880,7 +890,7 @@ public OnPluginStart()
 	if (g_hForceRespawn == INVALID_HANDLE) {
 		SetFailState("Fatal Error: Unable to find signature for \"ForceRespawn\"!");
 	}
-	// Load localization file
+	//Load localization file
 	LoadTranslations("common.phrases");
 	LoadTranslations("respawn.phrases");
 	LoadTranslations("nearest_player.phrases.txt");
@@ -996,8 +1006,8 @@ void UpdateRespawnCvars()
 	
 	//Dynamic Respawns
 	g_DynamicRespawn_Distance_mult = GetConVarFloat(sm_respawn_dynamic_distance_multiplier);
-	g_dynamicSpawnCounter_Perc = GetConVarFloat(sm_respawn_dynamic_spawn_counter_percent);
-	g_dynamicSpawn_Perc = GetConVarFloat(sm_respawn_dynamic_spawn_percent);
+	g_dynamicSpawnCounter_Perc = GetConVarInt(sm_respawn_dynamic_spawn_counter_percent);
+	g_dynamicSpawn_Perc = GetConVarInt(sm_respawn_dynamic_spawn_percent);
 	
 	//Revive counts
 	g_iReviveSeconds = GetConVarInt(sm_revive_seconds);
@@ -1083,6 +1093,7 @@ void UpdateRespawnCvars()
 		
 	// Respawn delay for team ins
 	g_fCvar_respawn_delay_team_ins = GetConVarFloat(sm_respawn_delay_team_ins);
+	g_fCvar_respawn_delay_team_ins_spec = GetConVarFloat(sm_respawn_delay_team_ins_special);
 	
 	// Respawn type 1
 	g_iRespawnCount[2] = GetConVarInt(sm_respawn_lives_team_sec);
@@ -1161,6 +1172,7 @@ void UpdateRespawnCvars()
 	g_iCvar_counterattack_vanilla = GetConVarInt(sm_respawn_counterattack_vanilla);
 	g_iCvar_final_counterattack_type = GetConVarInt(sm_respawn_final_counterattack_type);
 	g_flMinPlayerDistance = GetConVarFloat(cvarMinPlayerDistance);
+	g_flBackSpawnIncrease = GetConVarFloat(cvarBackSpawnIncrease);
 	g_flMaxPlayerDistance = GetConVarFloat(cvarMaxPlayerDistance);
 
 	g_flMinObjectiveDistance = GetConVarFloat(cvarMinObjectiveDistance);
@@ -1643,7 +1655,19 @@ void RespawnPlayer(client, target)
 		SDKCall(g_hForceRespawn, target);
 	}
 }
-
+// ForceRespawnPlayer player
+void ForceRespawnPlayer(client, target)
+{
+	new team = GetClientTeam(target);
+	if(IsClientInGame(target) && !IsClientTimingOut(target) && g_client_last_classstring[target][0] && playerPickSquad[target] == 1 && team == TEAM_1)
+	{
+		// Write a log
+		LogAction(client, target, "\"%L\" respawned \"%L\"", client, target);
+		
+		// Call forcerespawn fucntion
+		SDKCall(g_hForceRespawn, target);
+	}
+}
 // Check and inform player status
 public Action:Timer_PlayerStatus(Handle:Timer)
 {
@@ -1944,6 +1968,9 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 // Check enemy is stuck
 public Action:Timer_CheckEnemyStatic(Handle:Timer)
 {
+	//Remove bot weapons when static killed to reduce server performance on dropped items.
+	new primaryRemove = 1, secondaryRemove = 1, grenadesRemove = 1;
+
 	// Check round state
 	if (g_iRoundStatus == 0) return Plugin_Continue;
 	
@@ -1979,6 +2006,8 @@ public Action:Timer_CheckEnemyStatic(Handle:Timer)
 						if (tDistance <= 4 && (capDistance > 800 || g_botStaticGlobal[enemyBot] > 120)) 
 						{
 							//PrintToServer("ENEMY STATIC - KILLING");
+							
+							RemoveWeapons(enemyBot, primaryRemove, secondaryRemove, grenadesRemove);
 							ForcePlayerSuicide(enemyBot);
 							AddLifeForStaticKilling(enemyBot);
 						}
@@ -2027,6 +2056,7 @@ public Action:Timer_CheckEnemyStatic(Handle:Timer)
 						if (tDistance <= 4 && (capDistance > 800))// || g_botStaticGlobal[enemyBot] > 120)) 
 						{
 							//PrintToServer("ENEMY STATIC - KILLING");
+							RemoveWeapons(enemyBot, primaryRemove, secondaryRemove, grenadesRemove);
 							ForcePlayerSuicide(enemyBot);
 							AddLifeForStaticKilling(enemyBot);
 						}
@@ -2048,6 +2078,8 @@ public Action:Timer_CheckEnemyStatic(Handle:Timer)
 // Check enemy is stuck
 public Action:Timer_CheckEnemyAway(Handle:Timer)
 {
+	//Remove bot weapons when static killed to reduce server performance on dropped items.
+	new primaryRemove = 1, secondaryRemove = 1, grenadesRemove = 1;
 	// Check round state
 	if (g_iRoundStatus == 0) return Plugin_Continue;
 	
@@ -2080,9 +2112,10 @@ public Action:Timer_CheckEnemyAway(Handle:Timer)
 						else 
 							capDistance = 801;
 						// If enemy position is static, kill him
-						if (tDistance <= 150 && capDistance > 1000) 
+						if (tDistance <= 150 && capDistance > 2500) 
 						{
 							//PrintToServer("ENEMY STATIC - KILLING");
+							RemoveWeapons(enemyBot, primaryRemove, secondaryRemove, grenadesRemove);
 							ForcePlayerSuicide(enemyBot);
 							AddLifeForStaticKilling(enemyBot);
 						}
@@ -2128,6 +2161,7 @@ public Action:Timer_CheckEnemyAway(Handle:Timer)
 						if (tDistance <= 150 && capDistance > 1200) 
 						{
 							//PrintToServer("ENEMY STATIC - KILLING");
+							RemoveWeapons(enemyBot, primaryRemove, secondaryRemove, grenadesRemove);
 							ForcePlayerSuicide(enemyBot);
 							AddLifeForStaticKilling(enemyBot);
 						}
@@ -2351,10 +2385,10 @@ CheckSpawnPoint(Float:vecSpawn[3],client,Float:tObjectiveDistance,Int:m_nActiveP
 	new acp = (Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex") - 1);
 	new acp2 = m_nActivePushPointIndex;
 	//new ncp = Ins_ObjectiveResource_GetProp("m_iNumControlPoints");
-	if (acp == acp2)
+	if (acp == acp2 && !Ins_InCounterAttack())
 	{
-		tMinPlayerDistMult = 2000;
-		PrintToServer("INCREASE SPAWN DISTANCE | acp: %d acp2 %d", acp, acp2);
+		tMinPlayerDistMult = g_flBackSpawnIncrease;
+		//PrintToServer("INCREASE SPAWN DISTANCE | acp: %d acp2 %d", acp, acp2);
 	}
 
 	//Update player spawns before we check against them
@@ -2513,7 +2547,7 @@ CheckSpawnPointPlayers(Float:vecSpawn[3],client) {
 	return 1;
 }
 
-public GetPushPointIndex(Float:fRandomFloat)
+public GetPushPointIndex(Float:fRandomFloat, client)
 {
 	// Get the number of control points
 	new ncp = Ins_ObjectiveResource_GetProp("m_iNumControlPoints");
@@ -2526,10 +2560,10 @@ public GetPushPointIndex(Float:fRandomFloat)
 	//new Float:distance = GetVectorDistance(vecSpawn,m_vCPPositions[m_nActivePushPointIndex]);
 	//Check last point	
  		
-	if (((acp+1) >= ncp) || (Ins_InCounterAttack()) || (m_nActivePushPointIndex > 1))
+	if (((acp+1) >= ncp && Ins_InCounterAttack()) || g_spawnFrandom[client] < g_dynamicSpawnCounter_Perc || (Ins_InCounterAttack()) || (m_nActivePushPointIndex > 1))
  	{
  		//PrintToServer("###POINT_MOD### | fRandomFloat: %f | g_dynamicSpawnCounter_Perc %f ",fRandomFloat, g_dynamicSpawnCounter_Perc);
- 		if ((acp+1) >= ncp)
+ 		if ((acp+1) >= ncp && Ins_InCounterAttack())
  			m_nActivePushPointIndex--;
  		else
  		{
@@ -2544,14 +2578,8 @@ public GetPushPointIndex(Float:fRandomFloat)
 	 		{
 	 			if (m_nActivePushPointIndex > 1)
 	 			{
-	 				if (fRandomFloat <= 0.5)
-	 				{
-	 					m_nActivePushPointIndex++;
-	 				}
-	 				else
-	 				{
-	 					m_nActivePushPointIndex--; //We increase the minplayer distance if this happens
-	 				}
+	 				if (g_spawnFrandom[client] < g_dynamicSpawnCounter_Perc)
+	 					m_nActivePushPointIndex--;
 	 			}
 	 		}
 	 	}
@@ -2578,7 +2606,7 @@ float GetSpawnPoint_SpawnPoint(client) {
 
 	new m_nActivePushPointIndex = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
 	if ((Ins_InCounterAttack() && g_spawnFrandom[client] < g_dynamicSpawnCounter_Perc) || (!Ins_InCounterAttack() && g_spawnFrandom[client] < g_dynamicSpawn_Perc && acp > 1))
-		m_nActivePushPointIndex = GetPushPointIndex(fRandomFloat);
+		m_nActivePushPointIndex = GetPushPointIndex(fRandomFloat, client);
 	new point = FindEntityByClassname(-1, "ins_spawnpoint");
 	new Float:tObjectiveDistance = g_flMaxObjectiveDistance;
 	while (point != -1) {
@@ -2657,17 +2685,8 @@ float GetSpawnPoint_SpawnPoint(client) {
 		if ((acp+1) >= ncp)
 			m_nActivePushPointIndex--;
 		else
-		{
 			m_nActivePushPointIndex++;
-			// if (fRandomFloat <= 0.3)
-			// {
-			// 	m_nActivePushPointIndex -= 1;
-			// }
-			// else
-			// {
-			// 	m_nActivePushPointIndex++; //We increase the minplayer distance if this happens
-			// }
-		}
+
 	}
 	while (pointFinal != -1) {
 		//m_iTeamNum = GetEntProp(pointFinal, Prop_Send, "m_iTeamNum");
@@ -2791,7 +2810,7 @@ public Action:Event_Spawn(Handle:event, const String:name[], bool:dontBroadcast)
 	{
 		int iCanSpawn = CheckSpawnPointPlayers(vecOrigin,client);
 		//Global random for spawning
-		g_spawnFrandom[client] = GetRandomFloat(0, 1.0);
+		g_spawnFrandom[client] = GetRandomInt(0, 100);
 		//InsLog(DEBUG, "Event_Spawn iCanSpawn %d", iCanSpawn);
 		if (!iCanSpawn || (Ins_InCounterAttack() && g_spawnFrandom[client] < g_dynamicSpawnCounter_Perc) || 
 			(!Ins_InCounterAttack() && g_spawnFrandom[client] < g_dynamicSpawn_Perc && acp > 1)) {
@@ -2820,8 +2839,8 @@ public Action:Event_SpawnPost(Handle:event, const String:name[], bool:dontBroadc
 		return Plugin_Continue;
 	}
 	SetNextAttack(client);
-	new Float:fRandom = GetRandomFloat(0.0, 1.0);
-
+	//new Float:fRandom = GetRandomFloat(0.0, 1.0);
+	new fRandom = GetRandomInt(1, 100);
 	//Check grenades
 	if (fRandom < g_removeBotGrenadeChance && !Ins_InCounterAttack())
 	{
@@ -3166,7 +3185,7 @@ public Action:Event_RoundEnd_Pre(Handle:event, const String:name[], bool:dontBro
 {
 	for (new client = 1; client <= MaxClients; client++)
 	{
-		if (!IsFakeClient(client))
+		if (IsFakeClient(client))
 			continue;
 		if (!IsValidClient(client))
 			continue;
@@ -3188,7 +3207,7 @@ public Action:Event_RoundEnd_Pre(Handle:event, const String:name[], bool:dontBro
 	//StopCounterAttackMusic();
 
 	//Reset Variables
-	g_removeBotGrenadeChance = 0.5;
+	g_removeBotGrenadeChance = 50;
 }
 
 // When round ends, intialize variables
@@ -3323,7 +3342,7 @@ public Action:Event_ControlPointCaptured_Pre(Handle:event, const String:name[], 
 		
 		cvar_ca_dur = FindConVar("mp_checkpoint_counterattack_duration_finale");
 		SetConVarInt(cvar_ca_dur, final_ca_dur, true, false);
-		g_removeBotGrenadeChance = 0.0;
+		g_dynamicSpawnCounter_Perc = g_dynamicSpawnCounter_Perc + 10;
 
 	}
 	// Normal counter attack
@@ -3559,6 +3578,7 @@ public Action:Event_ObjectDestroyed_Pre(Handle:event, const String:name[], bool:
 	{
 		cvar_ca_dur = FindConVar("mp_checkpoint_counterattack_duration_finale");
 		SetConVarInt(cvar_ca_dur, final_ca_dur, true, false);
+		g_dynamicSpawnCounter_Perc = g_dynamicSpawnCounter_Perc + 10;
 	}
 	// Normal counter attack
 	else
@@ -3753,7 +3773,48 @@ public Action:Event_ObjectDestroyed_Post(Handle:event, const String:name[], bool
 	
 	return Plugin_Continue;
 }
+public Action:test(client, args) 
+{ 
+	// // Jareds pistols only code to verify iMedic is carrying knife
+	// new ActiveWeapon = GetEntPropEnt(client, Prop_Data, "m_hActiveWeapon");
+	// if (ActiveWeapon < 0)
+	// 	return Plugin_Continue;
+	
+	// // Get weapon class name
+	// decl String:sWeapon[32];
+	// GetEdictClassname(ActiveWeapon, sWeapon, sizeof(sWeapon));
+	// //new primaryWeapon = GetPlayerWeaponSlot(client, 0);
+	// // if (primaryWeapon != -1 && IsValidEntity(primaryWeapon))
+	// // {
+	// // }
+	// // Call revive function
+	// //CreateReviveTimer(iInjured);
+	// RemovePlayerItem(client,ActiveWeapon);
+ //    //Client_RemoveAllWeapons(client, "weapon_knife", true); 
+ //    Client_GiveWeaponAndAmmo(client, "weapon_m4a1", _, 1, _, 10); 
+	// new Handle:forceResupply;
+	// new Handle:hGameConfig;
+	// // Init respawn function
+	// // Next 14 lines of text are taken from Andersso's DoDs respawn plugin. Thanks :)
+	//  hGameConfig = LoadGameConfigFile("insurgency.games");
+	
+	// if (hGameConfig == INVALID_HANDLE)
+	// 	SetFailState("Fatal Error: Missing File \"insurgency.games\"!");
 
+	// StartPrepSDKCall(SDKCall_Entity);
+	// PrepSDKCall_SetFromConf(hGameConfig, SDKConf_Signature, "CINSWeapon::DecrementAmmo");
+	
+	// forceResupply = EndPrepSDKCall();
+	// if (forceResupply == INVALID_HANDLE) {
+	// 	SetFailState("Fatal Error: Unable to find signature for \"CINSWeapon::DecrementAmmo\"!");
+	// }
+	// new ActiveWeapon = GetEntPropEnt(client, Prop_Data, "m_hActiveWeapon");
+	// if (ActiveWeapon < 0)
+	// 	return Plugin_Continue;
+	// SDKCall(forceResupply, ActiveWeapon);
+	//PrintToServer("clientMags: %d", clientMags);
+   //return Plugin_Handled; 
+} 
 void EnableDisableEliteBotCvars(tEnabled, isFinale)
 {
 	new Float:tCvarFloatValue;
@@ -4603,8 +4664,13 @@ public CreateCounterRespawnTimer(client)
 
 // Respawn bot
 public CreateBotRespawnTimer(client)
-{
-	CreateTimer(g_fCvar_respawn_delay_team_ins, RespawnBot, client);
+{	
+	if (!Ins_InCounterAttack() && ((StrContains(g_client_last_classstring[client], "bomber") > -1) || (StrContains(g_client_last_classstring[client], "juggernaut") > -1))) //make sure its a bot bomber
+	{
+		CreateTimer(g_fCvar_respawn_delay_team_ins_spec, RespawnBot, client);
+	}
+	else
+		CreateTimer(g_fCvar_respawn_delay_team_ins, RespawnBot, client);
 }
 
 // Respawn player
@@ -4721,8 +4787,8 @@ public Action:RespawnPlayerPost(Handle:timer, any:client)
 	
 	// Teleport to avtive counter attack point
 	//PrintToServer("[REVIVE_DEBUG] called RespawnPlayerPost for client %N (%d)",client,client);
-	if (g_fRespawnPosition[0] != 0.0 && g_fRespawnPosition[1] != 0.0 && g_fRespawnPosition[2] != 0.0)
-		TeleportEntity(client, g_fRespawnPosition, NULL_VECTOR, NULL_VECTOR);
+	//if (g_fRespawnPosition[0] != 0.0 && g_fRespawnPosition[1] != 0.0 && g_fRespawnPosition[2] != 0.0)
+	//	TeleportEntity(client, g_fRespawnPosition, NULL_VECTOR, NULL_VECTOR);
 	
 	// Reset ragdoll position
 	g_fRagdollPosition[client][0] = 0.0;
@@ -5376,6 +5442,7 @@ public Action:Timer_MedicMonitor(Handle:timer)
 							decl String:sBuf[255];
 							Format(sBuf, 255,"你完全治疗了 %N | 在奖励复活次数前你还有 %d 点需要治疗", iTarget, (iHealthCap - g_playerMedicHealsAccumulated[medic]));
 							PrintHintText(medic, "%s", sBuf);
+							PrintToChat(medic, "%s", sBuf);
 						}
 						else
 						{
@@ -5430,6 +5497,7 @@ public Action:Timer_MedicMonitor(Handle:timer)
 							decl String:sBuf[255];
 							Format(sBuf, 255,"你完全治疗了 %N | 在奖励复活次数前你还有 %d 点需要治疗", iTarget, (iHealthCap - g_playerMedicHealsAccumulated[medic]));
 							PrintHintText(medic, "%s", sBuf);
+							PrintToChat(medic, "%s", sBuf);
 						}
 						else
 						{
@@ -5578,6 +5646,7 @@ public Action:Timer_MedicMonitor(Handle:timer)
 								decl String:sBuf[255];
 								Format(sBuf, 255,"You max healed %N | Health points remaining til bonus life: %d", iTarget, (iHealthCap - g_playerNonMedicHealsAccumulated[medic]));
 								PrintHintText(medic, "%s", sBuf);
+								PrintToChat(medic, "%s", sBuf);
 							}
 							else
 							{
@@ -5736,8 +5805,8 @@ public AmmoResupply_Player(client)
 	grenadesRemove = 0;
 	RemoveWeapons(client, primaryRemove, secondaryRemove, grenadesRemove);
 
-	TeleportEntity(client, tempOrigin, NULL_VECTOR, NULL_VECTOR);
-	ForcePlayerSuicide(client);
+	//TeleportEntity(client, tempOrigin, NULL_VECTOR, NULL_VECTOR);
+	//ForcePlayerSuicide(client);
 	// Get dead body
 	new clientRagdoll = GetEntPropEnt(client, Prop_Send, "m_hRagdoll");
 	
@@ -5755,7 +5824,7 @@ public AmmoResupply_Player(client)
 		}
 	}
 
-	RespawnPlayer(client, client);
+	ForceRespawnPlayer(client, client);
 	TeleportEntity(client, plyrOrigin, NULL_VECTOR, NULL_VECTOR);
 	primaryRemove = 0;
 	secondaryRemove = 0; 
@@ -5818,7 +5887,7 @@ public FindValidProp_InDistance(client)
 	{
 		new String:propModelName[128];
 		GetEntPropString(prop, Prop_Data, "m_ModelName", propModelName, 128);
-		if (StrEqual(propModelName, "models/static_props/wcache_crate_01.mdl"))
+		if (StrEqual(propModelName, "models/sernix/ammo_cache/ammo_cache_small.mdl"))
 		{
 			new Float:tDistance = (GetEntitiesDistance(client, prop));
 			if (tDistance <= (GetConVarInt(sm_ammo_resupply_range)))
@@ -6364,7 +6433,7 @@ public FindValid_Antenna()
 	{
 		new String:propModelName[128];
 		GetEntPropString(prop, Prop_Data, "m_ModelName", propModelName, 128);
-		if (StrEqual(propModelName, "models/static_fittings/antenna02b.mdl"))
+		if (StrEqual(propModelName, "models/sernix/ied_jammer/ied_jammer.mdl"))
 		{
 			return prop;
 		}
