@@ -126,6 +126,11 @@ new g_iCPSpeedUpMax;
 new g_iCPSpeedUpRate;
 new g_bIsCounterAttackTimerActive = false;
 
+new g_isConquer,
+	g_isOutpost,
+	g_isCheckpoint,
+	g_isHunt;
+
 public void OnPluginStart() {
 	// cvars
 	sm_roundendblock_enabled = CreateConVar("sm_roundendblock_enabled", "1", "Coop bot Enabled", FCVAR_NOTIFY);
@@ -201,6 +206,37 @@ public OnMapStart()
 	g_iCPSpeedUpRate = GetConVarInt(g_hCvarCPSpeedUpRate);
 
 	g_announceTick = g_max_AnnounceTime;
+	g_isConquer = 0;
+	g_isHunt = 0;
+	g_isCheckpoint = 0;
+	g_isOutpost = 0;
+	
+	// Check gamemode
+	decl String:sGameMode[32];
+	GetConVarString(FindConVar("mp_gamemode"), sGameMode, sizeof(sGameMode));
+	if (StrEqual(sGameMode,"hunt")) // if Hunt?
+	{
+		g_isHunt = 1;
+	   	//SetConVarFloat(sm_respawn_fatal_chance, 0.1, true, false);
+	   	//SetConVarFloat(sm_respawn_fatal_head_chance, 0.2, true, false);
+	}
+	if (StrEqual(sGameMode,"conquer")) // if conquer?
+	{
+		g_isConquer = 1;
+	   	//SetConVarFloat(sm_respawn_fatal_chance, 0.4, true, false);
+	   	//SetConVarFloat(sm_respawn_fatal_head_chance, 0.4, true, false);
+	}
+	if (StrEqual(sGameMode,"outpost")) // if conquer?
+	{
+		g_isOutpost = 1;
+	   	//SetConVarFloat(sm_respawn_fatal_chance, 0.4, true, false);
+	   	//SetConVarFloat(sm_respawn_fatal_head_chance, 0.4, true, false);
+	}
+	if (StrEqual(sGameMode,"checkpoint")) // if Hunt?
+	{
+		g_isCheckpoint = 1;
+	}
+
 	CreateTimer(1.0, Timer_AnnounceSaves, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	
 
@@ -213,8 +249,8 @@ public Action:Timer_AnnounceSaves(Handle:timer, any:data)
 	{
 		decl String:textToPrint[64];
 		decl String:textToHint[64];
-		Format(textToPrint, sizeof(textToPrint), "\x03[Server] Remaining RoundEnd Saves: %d", g_iRoundBlockCount);
-		Format(textToHint, sizeof(textToHint), "\x03[Server] Remaining RoundEnd Saves: %d", g_iRoundBlockCount);
+		Format(textToPrint, sizeof(textToPrint), "\x03剩余增援波数: %d", g_iRoundBlockCount);
+		Format(textToHint, sizeof(textToHint), "\x03剩余增援波数: %d", g_iRoundBlockCount);
 		PrintToChatAll(textToPrint);
 		PrintHintTextToAll(textToHint);
 		g_announceTick = g_max_AnnounceTime;
@@ -223,7 +259,7 @@ public Action:Timer_AnnounceSaves(Handle:timer, any:data)
 }
 public Action:Command_AddBlocker(client, args) {
 	//AddBlocker();
-	PrintToChat(client, "[RndEndBlock] Added roundend blocker"); // show chat debug 
+	PrintToChat(client, "[回合结束阻止] 回合结束阻止已启用"); // show chat debug 
 	
 	return Plugin_Handled;
 }
@@ -259,7 +295,7 @@ public Action:Command_BotCount(client, args) {
 		}
 	}
 	
-	PrintToChat(client, "[CoopBot] Bot total: %d / Alive bots: %d", iBotCount, iAliveBots); // show chat debug 
+	PrintToChat(client, "[合作] 总BOT数: %d / 生存的BOT: %d", iBotCount, iAliveBots); // show chat debug 
 	*/
 	new mc = GetMaxClients();
 	for( new i = 1; i < mc; i++ ){
@@ -313,7 +349,7 @@ public Action:Event_RoundStart(Handle:event, const String:name[], bool:dontBroad
 	
 	new ncp = Ins_ObjectiveResource_GetProp("m_iNumControlPoints");
 
-	if (ncp < 6)
+	if (ncp < 6 || g_isConquer == 1 || g_isHunt == 1 || g_isOutpost == 1)
 	{
 		if (g_iRoundBlockCount > 1)
 			g_iRoundBlockCount = 1;
@@ -321,7 +357,7 @@ public Action:Event_RoundStart(Handle:event, const String:name[], bool:dontBroad
 	//KickBlockerClient();
 	if (g_iRoundEndBlockDebug)
 	{
-		PrintToServer("[RndEndBlock] Round started.");
+		PrintToServer("[回合结束阻止] 回合开始.");
 	}
 	
 	new iPreRound = GetConVarInt(FindConVar("mp_timer_preround"));
@@ -331,7 +367,7 @@ public Action:Timer_RoundStartPost(Handle:Timer)
 {
 	if (g_iRoundEndBlockDebug)
 	{
-		PrintToServer("[RndEndBlock] Round post started.");
+		PrintToServer("[回合结束阻止] Round post started.");
 	}
 	
 	g_iRoundStatus = 1;
@@ -379,6 +415,8 @@ public Action:Event_RoundEnd_Post(Handle:event, const String:name[], bool:dontBr
 	{
 		if (g_iRoundBlockCount > 1)
 			g_iRoundBlockCount = 1;
+		else
+			g_iRoundBlockCount = 0;
 	}
 	if (g_iRoundEndBlockDebug)
 	{
@@ -555,12 +593,22 @@ public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontB
 			new iAlivePlayers = GetAlivePlayers();
 			new iAliveAllowed = 5;
 			if (teamSecCount <= 6)
-				iAliveAllowed = 1;
+				iAliveAllowed = GetRandomInt(1, 2);
 			if (teamSecCount > 6 && teamSecCount <= 10)
-				iAliveAllowed = 2;
+				iAliveAllowed = GetRandomInt(1, 4);
 			else
-				iAliveAllowed = GetRandomInt(1, 5);
+				iAliveAllowed = GetRandomInt(2, 5);
 
+			//Create buffer for counter attacks
+			if (Ins_InCounterAttack())
+			{
+				if (teamSecCount <= 6)
+					iAliveAllowed += GetRandomInt(1, 2);
+				if (teamSecCount > 6 && teamSecCount <= 10)
+					iAliveAllowed += GetRandomInt(1, 4);
+				else
+					iAliveAllowed += GetRandomInt(2, 4);
+			}
 
 			if (iAlivePlayers < iAliveAllowed && g_iRoundBlockCount > 0)
 			{
@@ -569,8 +617,8 @@ public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontB
 				
 				decl String:textToPrint[64];
 				decl String:textToHint[64];
-				Format(textToPrint, sizeof(textToPrint), "\x03[Server] RoundEnd is protected. (Remaining Saves: %d)", g_iRoundBlockCount);
-				Format(textToHint, sizeof(textToHint), "RoundEnd is protected. | Remaining Saves: %d", g_iRoundBlockCount);
+				Format(textToPrint, sizeof(textToPrint), "\x03剩余增援波数: %d", g_iRoundBlockCount);
+				Format(textToHint, sizeof(textToHint), "剩余增援波数: %d", g_iRoundBlockCount);
 				PrintToChatAll(textToPrint);
 				PrintHintTextToAll(textToHint);
 				//ShowPanelAll(textToHint);
@@ -583,26 +631,26 @@ public Action:Event_PlayerDeathPre(Handle:event, const String:name[], bool:dontB
 				// 	CreateTimer(1.0, Timer_Announce, _, TIMER_REPEAT);
 				// }
 				
-				if (Ins_InCounterAttack())
-				{
-					// Get capture point speed cvar values
-					g_iCPSpeedUp = GetConVarInt(g_hCvarCPSpeedUp);
-					g_iCPSpeedUpMax = GetConVarInt(g_hCvarCPSpeedUpMax);
-					g_iCPSpeedUpRate = GetConVarInt(g_hCvarCPSpeedUpRate);
+				// if (Ins_InCounterAttack())
+				// {
+				// 	// Get capture point speed cvar values
+				// 	g_iCPSpeedUp = GetConVarInt(g_hCvarCPSpeedUp);
+				// 	g_iCPSpeedUpMax = GetConVarInt(g_hCvarCPSpeedUpMax);
+				// 	g_iCPSpeedUpRate = GetConVarInt(g_hCvarCPSpeedUpRate);
 					
-					// Prevent round end
-					SetConVarInt(g_hCvarCPSpeedUp, -1, true, false);
-					SetConVarInt(g_hCvarCPSpeedUpMax, 0, true, false);
-					SetConVarInt(g_hCvarCPSpeedUpRate, 0, true, false);
-				}
+				// 	// Prevent round end
+				// 	SetConVarInt(g_hCvarCPSpeedUp, -1, true, false);
+				// 	SetConVarInt(g_hCvarCPSpeedUpMax, 0, true, false);
+				// 	SetConVarInt(g_hCvarCPSpeedUpRate, 0, true, false);
+				// }
 				RevivePlayers();
 			}
 			else if (iAlivePlayers == 1 && g_iRoundBlockCount <= 0)
 			{
 				decl String:textToPrint[64];
 				decl String:textToHint[64];
-				Format(textToPrint, sizeof(textToPrint), "\x03[Server] There's no more RoundEnd protection.");
-				Format(textToHint, sizeof(textToHint), "There's no more RoundEnd protection.");
+				Format(textToPrint, sizeof(textToPrint), "\x03增援波数已用完.");
+				Format(textToHint, sizeof(textToHint), "增援波数已用完.");
 				PrintToChatAll(textToPrint);
 				PrintHintTextToAll(textToHint);
 				//ShowPanelAll(textToHint);
@@ -625,7 +673,7 @@ public Action:Timer_Announce(Handle:Timer)
 					new Handle:hPanel = CreatePanel(INVALID_HANDLE);
 					decl String:buffer[128];
 					
-					SetPanelTitle(hPanel, "RoundEnd Protection");
+					SetPanelTitle(hPanel, "Security Reinforce");
 					DrawPanelItem(hPanel, "", ITEMDRAW_SPACER);
 					
 					DrawPanelItem(hPanel, "Waiting to revive players.", ITEMDRAW_DEFAULT);
@@ -802,8 +850,8 @@ void RevivePlayers()
 			{
 				SDKCall(g_hPlayerRespawn, client);
 			
-				if (g_fSpawnPoint[0] != 0.0 && g_fSpawnPoint[1] != 0.0 && g_fSpawnPoint[2] != 0.0)
-					TeleportEntity(client, g_fSpawnPoint, NULL_VECTOR, NULL_VECTOR);
+				//if (g_fSpawnPoint[0] != 0.0 && g_fSpawnPoint[1] != 0.0 && g_fSpawnPoint[2] != 0.0)
+				//	TeleportEntity(client, g_fSpawnPoint, NULL_VECTOR, NULL_VECTOR);
 
 				// Get dead body
 				new clientRagdoll = GetEntPropEnt(client, Prop_Send, "m_hRagdoll");
