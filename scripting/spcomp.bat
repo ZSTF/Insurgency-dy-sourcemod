@@ -1,0 +1,2 @@
+spcomp.exe c_dy_respawn_naong_ai_rank.sp
+pause
