@@ -87,7 +87,7 @@ new
 	g_AIDir_TeamStatus = 50,
 	g_AIDir_TeamStatus_min = 0,
 	g_AIDir_TeamStatus_max = 100,
-	g_AIDir_BotsKilledReq_mult = 3, 
+	g_AIDir_BotsKilledReq_mult = 4, 
 	g_AIDir_BotsKilledCount = 0,
 	g_AIDir_AnnounceCounter = 0,
 	g_AIDir_AnnounceTrig = 5,
@@ -4929,10 +4929,10 @@ public Action:Event_PlayerPickSquad_Post( Handle:event, const String:name[], boo
 	{
 		// Admin medic
 		if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			Format(sNewNickname, sizeof(sNewNickname), "%s%s%s[管理][破障] %s", super_medic,super_kill,super_score,gg_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "%s%s%s[管理][破障] %s", super_medic,super_kill,super_score,g_client_org_nickname[client]);
 		// Donor medic
 		else if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_RESERVATION))
-			Format(sNewNickname, sizeof(sNewNickname), "%s%s%s[会员][破障] %s", super_medic,super_kill,super_score,gg_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "%s%s%s[会员][破障] %s", super_medic,super_kill,super_score,g_client_org_nickname[client]);
 		// Normal medic
 		else
 			Format(sNewNickname, sizeof(sNewNickname), "%s%s%s[工程] %s", super_medic,super_kill,super_score,g_client_org_nickname[client]);
