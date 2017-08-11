@@ -87,7 +87,7 @@ new
 	g_AIDir_TeamStatus = 50,
 	g_AIDir_TeamStatus_min = 0,
 	g_AIDir_TeamStatus_max = 100,
-	g_AIDir_BotsKilledReq_mult = 4, 
+	g_AIDir_BotsKilledReq_mult = 3, 
 	g_AIDir_BotsKilledCount = 0,
 	g_AIDir_AnnounceCounter = 0,
 	g_AIDir_AnnounceTrig = 5,
@@ -95,14 +95,14 @@ new
 	g_AIDir_ChangeCond_Min = 60,
 	g_AIDir_ChangeCond_Max = 180,
 	g_AIDir_AmbushCond_Counter = 0,
-	g_AIDir_AmbushCond_Min = 180,
-	g_AIDir_AmbushCond_Max = 360,
+	g_AIDir_AmbushCond_Min = 120,
+	g_AIDir_AmbushCond_Max = 300,
 	g_AIDir_AmbushCond_Rand = 240,
 	g_AIDir_AmbushCond_Chance = 10,
 	g_AIDir_ChangeCond_Rand = 180,
 	g_AIDir_ReinforceTimer_Orig,
 	g_AIDir_ReinforceTimer_SubOrig,
-	g_AIDir_RandomDiff = 0,
+	g_AIDir_CurrDiff = 0,
 	g_AIDir_DiffChanceBase = 0,
 	bool:g_AIDir_BotReinforceTriggered = false;
 
@@ -120,9 +120,9 @@ new
 	g_iNearestBody[MAXPLAYERS+1],
 	g_botStaticGlobal[MAXPLAYERS+1],
 	g_resupplyCounter[MAXPLAYERS+1],
-	g_resupplyDeath[MAXPLAYERS+1],
 	g_ammoResupplyAmt[MAX_ENTITIES+1],
 	g_trackKillDeaths[MAXPLAYERS+1],
+	Float:g_badSpawnPos_Track[MAXPLAYERS+1][3],
 	g_iRespawnCount[4],
 	g_huntReinforceCacheAdd = 120,
 	bool:g_huntCacheDestroyed = false,
@@ -154,6 +154,9 @@ new
 
 new Handle:g_donorTagRemove_Array;
 new Handle:g_playerArrayList;
+
+//Bot Spawning 
+new Handle:g_badSpawnPos_Array;
 
 // Navmesh Init
 new
@@ -327,6 +330,7 @@ new
 	Handle:sm_enable_bonus_lives = INVALID_HANDLE,
 	Handle:sm_finale_counter_spec_enabled = INVALID_HANDLE,
 	Handle:sm_finale_counter_spec_percent = INVALID_HANDLE,
+	Handle:sm_cqc_map_enabled = INVALID_HANDLE,
 	Handle:sm_enable_squad_spawning = INVALID_HANDLE,
 
 	// NAV MESH SPECIFIC CVARS
@@ -352,6 +356,7 @@ new
 	g_elite_counter_attacks,
 	g_finale_counter_spec_enabled,
 	g_finale_counter_spec_percent,
+	g_cqc_map_enabled,
 	g_elitePeriod,
 	g_elitePeriod_min,
 	g_elitePeriod_max,
@@ -444,6 +449,11 @@ new
 	g_bot_attack_aimpenalty_amt_far_org,
 	g_bot_attack_aimpenalty_time_close_org,
 	g_bot_attack_aimpenalty_time_far_org,
+	g_bot_aim_aimtracking_base_org,
+	g_bot_aim_aimtracking_frac_impossible_org,
+	g_bot_aim_angularvelocity_frac_impossible_org,
+	g_bot_aim_angularvelocity_frac_sprinting_target_org,
+	g_bot_aim_attack_aimtolerance_frac_impossible_org,
 	Float:g_bot_attackdelay_frac_difficulty_impossible_org,
 	Float:g_bot_attack_aimtolerance_newthreat_amt_org,
 	Float:g_bot_attack_aimtolerance_newthreat_amt_mult,
@@ -452,6 +462,11 @@ new
 	Float:g_bot_attackdelay_frac_difficulty_impossible_mult,
 	Float:g_bot_attack_aimpenalty_time_close_mult,
 	Float:g_bot_attack_aimpenalty_time_far_mult,
+	Float:g_bot_aim_aimtracking_base,
+	Float:g_bot_aim_aimtracking_frac_impossible,
+	Float:g_bot_aim_angularvelocity_frac_impossible,
+	Float:g_bot_aim_angularvelocity_frac_sprinting_target,
+	Float:g_bot_aim_attack_aimtolerance_frac_impossible,
 	g_coop_delay_penalty_base,
 	g_isEliteCounter,
 
@@ -557,6 +572,7 @@ public OnPluginStart()
     RegConsoleCmd("sm_serverhelp", serverhelp); 
 	//Create player array list
 	g_playerArrayList = CreateArray();
+	//g_badSpawnPos_Array = CreateArray();
 	RegConsoleCmd("kill", cmd_kill);
 
 
@@ -755,6 +771,7 @@ public OnPluginStart()
 	//Specialized Counter
 	sm_finale_counter_spec_enabled = CreateConVar("sm_finale_counter_spec_enabled", "0", "Enable specialized finale spawn percent? 1|0");
 	sm_finale_counter_spec_percent = CreateConVar("sm_finale_counter_spec_percent", "40", "What specialized finale counter percent for this map?");
+	sm_cqc_map_enabled = CreateConVar("sm_cqc_map_enabled", "0", "Is this a cqc map? 0|1 no|yes");
 
 	sm_enable_squad_spawning = CreateConVar("sm_enable_squad_spawning", "0", "Enable squad spawning SERNIX SPECIFIC? 1|0");
 	//AI Director cvars
@@ -1025,6 +1042,13 @@ void UpdateRespawnCvars()
 		PrintToChatAll("************EASTER EGG ROUND************");
 	}
 
+
+	// Type of resetting respawn token, Non-checkpoint modes get set to 0 automatically
+	g_iCvar_respawn_reset_type = GetConVarInt(sm_respawn_reset_type);
+
+	if(g_isCheckpoint == 0)
+		g_iCvar_respawn_reset_type = 0;
+
 	// Update Cvars
 	g_iCvar_respawn_enable = GetConVarInt(sm_respawn_enabled);
 	g_iCvar_revive_enable = GetConVarInt(sm_revive_enabled);
@@ -1041,8 +1065,6 @@ void UpdateRespawnCvars()
 	g_iCvar_respawn_type_team_ins = GetConVarInt(sm_respawn_type_team_ins);
 	g_iCvar_respawn_type_team_sec = GetConVarInt(sm_respawn_type_team_sec);
 	
-	// Type of resetting respawn token
-	g_iCvar_respawn_reset_type = GetConVarInt(sm_respawn_reset_type);
 	
 	//Dynamic Respawns
 	g_DynamicRespawn_Distance_mult = GetConVarFloat(sm_respawn_dynamic_distance_multiplier);
@@ -1213,10 +1235,10 @@ public OnMapStart()
 	//g_easterEggRound = false;
 	//Clear player array
 	ClearArray(g_playerArrayList);
-
 	//Dynamic Loadouts
 	g_iCvar_bombers_only = GetConVarInt(sm_bombers_only);
 	g_iCvar_multi_loadout_enabled = GetConVarInt(sm_multi_loadout_enabled);
+
 
 	//Load Dynamic Loadouts?
 	//if (g_iCvar_multi_loadout_enabled == 1)
@@ -1392,6 +1414,7 @@ public Action:Timer_MapStart(Handle:Timer)
 
 
 	g_finale_counter_spec_percent = GetConVarInt(sm_finale_counter_spec_percent);
+	g_cqc_map_enabled = GetConVarInt(sm_cqc_map_enabled);
 
 
 	// Update cvars
@@ -1412,6 +1435,8 @@ public Action:Timer_MapStart(Handle:Timer)
 	{
 		g_isHunt = 1;
 		g_iCvar_SpawnMode = 0;
+
+		//Lives given at beginning, change respawn type.
 	   	//SetConVarFloat(sm_respawn_fatal_chance, 0.1, true, false);
 	   	//SetConVarFloat(sm_respawn_fatal_head_chance, 0.2, true, false);
 	}
@@ -1419,6 +1444,8 @@ public Action:Timer_MapStart(Handle:Timer)
 	{
 		g_isConquer = 1;
 		g_iCvar_SpawnMode = 0;
+
+		//Lives given at beginning, change respawn type.
 	   	//SetConVarFloat(sm_respawn_fatal_chance, 0.4, true, false);
 	   	//SetConVarFloat(sm_respawn_fatal_head_chance, 0.4, true, false);
 	}
@@ -1426,6 +1453,8 @@ public Action:Timer_MapStart(Handle:Timer)
 	{
 		g_isOutpost = 1;
 		g_iCvar_SpawnMode = 0;
+
+		//Lives given at beginning, change respawn type.
 	   	//SetConVarFloat(sm_respawn_fatal_chance, 0.4, true, false);
 	   	//SetConVarFloat(sm_respawn_fatal_head_chance, 0.4, true, false);
 	}
@@ -1455,7 +1484,8 @@ public Action:Timer_MapStart(Handle:Timer)
 
 	if (g_isCheckpoint)
 	{
-		if (g_iCvar_respawn_reset_type)
+		//If spawned per point, give more per-point lives based on team count.
+		if (g_iCvar_respawn_reset_type == 1)
 			CreateTimer(1.0, Timer_DynLivesPerPoint,_ , TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
 	// Player status check timer
@@ -1477,7 +1507,8 @@ public Action:Timer_MapStart(Handle:Timer)
 	CreateTimer(1.0, Timer_AmmoResupply, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 
 	// AI Director Tick
-	CreateTimer(1.0, Timer_AIDirector_Main, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	if (g_isCheckpoint)
+		CreateTimer(1.0, Timer_AIDirector_Main, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 
 	// Squad Spawn Notify Leader
 	//if (GetConVarInt(sm_enable_squad_spawning) == 1)
@@ -1497,9 +1528,15 @@ public Action:Timer_MapStart(Handle:Timer)
 	g_bot_attack_aimpenalty_amt_close_mult = 15;
 	g_bot_attack_aimpenalty_amt_far_mult = 40;
 	g_bot_attackdelay_frac_difficulty_impossible_mult = 0.03;
-	g_bot_attack_aimpenalty_time_close_mult = 0.45;
-	g_bot_attack_aimpenalty_time_far_mult = 4;
+	g_bot_attack_aimpenalty_time_close_mult = 0.15;
+	g_bot_attack_aimpenalty_time_far_mult = 2;
 	g_coop_delay_penalty_base = 800;
+	g_bot_aim_aimtracking_base = 0.05;
+	g_bot_aim_aimtracking_frac_impossible =  0.05;
+	g_bot_aim_angularvelocity_frac_impossible =  0.05;
+	g_bot_aim_angularvelocity_frac_sprinting_target =  0.05;
+	g_bot_aim_attack_aimtolerance_frac_impossible =  0.05;
+
 	//Get Originals
 	g_ins_bot_count_checkpoint_max_org = GetConVarInt(FindConVar("ins_bot_count_checkpoint_max"));
 	g_mp_player_resupply_coop_delay_max_org = GetConVarInt(FindConVar("mp_player_resupply_coop_delay_max"));
@@ -1511,6 +1548,11 @@ public Action:Timer_MapStart(Handle:Timer)
 	g_bot_attack_aimpenalty_time_far_org = GetConVarFloat(FindConVar("bot_attack_aimpenalty_time_far"));
 	g_bot_attack_aimtolerance_newthreat_amt_org = GetConVarFloat(FindConVar("bot_attack_aimtolerance_newthreat_amt"));
 	g_bot_attackdelay_frac_difficulty_impossible_org = GetConVarFloat(FindConVar("bot_attackdelay_frac_difficulty_impossible"));
+	g_bot_aim_aimtracking_base_org = GetConVarFloat(FindConVar("bot_aim_aimtracking_base"));
+	g_bot_aim_aimtracking_frac_impossible_org = GetConVarFloat(FindConVar("bot_aim_aimtracking_frac_impossible"));
+	g_bot_aim_angularvelocity_frac_impossible_org = GetConVarFloat(FindConVar("bot_aim_angularvelocity_frac_impossible"));
+	g_bot_aim_angularvelocity_frac_sprinting_target_org = GetConVarFloat(FindConVar("bot_aim_angularvelocity_frac_sprinting_target"));
+	g_bot_aim_attack_aimtolerance_frac_impossible_org = GetConVarFloat(FindConVar("bot_aim_attack_aimtolerance_frac_impossible"));
 
 	CreateTimer(1.0, Timer_CheckEnemyStatic,_ , TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	if (g_isCheckpoint)
@@ -1811,7 +1853,7 @@ void AI_Director_RandomEnemyReinforce()
 		// if (g_iRemaining_lives_team_ins < (g_iRespawn_lives_team_ins / g_iReinforce_Mult) + g_iReinforce_Mult_Base)
 		// {
 			// Get bot count
-			new minBotCount = (g_iRespawn_lives_team_ins / 4);
+			new minBotCount = (g_iRespawn_lives_team_ins / 5);
 			g_iRemaining_lives_team_ins = g_iRemaining_lives_team_ins + minBotCount;
 			Format(textToPrint, sizeof(textToPrint), "伏击的增援已添加到现有的增援波数中!");
 			Format(textToPrint, sizeof(textToPrintChat), "伏击的增援已添加到现有的增援波数中!");
@@ -1869,7 +1911,7 @@ void AI_Director_RandomEnemyReinforce()
 	else
 	{
 		// Get bot count
-		new minBotCount = (g_iRespawn_lives_team_ins / 4);
+		new minBotCount = (g_iRespawn_lives_team_ins / 5);
 		g_iRemaining_lives_team_ins = g_iRemaining_lives_team_ins + minBotCount;
 
 		//Lower Bot Flank spawning on reinforcements
@@ -2005,7 +2047,7 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 				if (g_iRemaining_lives_team_ins < (g_iRespawn_lives_team_ins / g_iReinforce_Mult) + g_iReinforce_Mult_Base)
 				{
 					// Get bot count
-					new minBotCount = (g_iRespawn_lives_team_ins / 4);
+					new minBotCount = (g_iRespawn_lives_team_ins / 5);
 					g_iRemaining_lives_team_ins = g_iRemaining_lives_team_ins + minBotCount;
 					Format(textToPrint, sizeof(textToPrint), "敌军增援已加强!");
 					Format(textToPrintChat, sizeof(textToPrintChat), "敌军增援已加强!");
@@ -2094,7 +2136,7 @@ public Action:Timer_EnemyReinforce(Handle:Timer)
 			else
 			{
 				// Get bot count
-				new minBotCount = (g_iRespawn_lives_team_ins / 4);
+				new minBotCount = (g_iRespawn_lives_team_ins / 5);
 				g_iRemaining_lives_team_ins = g_iRemaining_lives_team_ins + minBotCount;
 				
 				//Lower Bot Flank spawning on reinforcements
@@ -2202,13 +2244,15 @@ public Action:Timer_CheckEnemyStatic(Handle:Timer)
 						else 
 							capDistance = 801;
 						// If enemy position is static, kill him
-						if (tDistance <= 4 && (capDistance > 800 || g_botStaticGlobal[enemyBot] > 120)) 
+						if (tDistance <= 4 && Check_NearbyPlayers(enemyBot) && (capDistance > 800 || g_botStaticGlobal[enemyBot] > 120)) 
 						{
-							//PrintToServer("ENEMY STATIC - KILLING");
-							
 							RemoveWeapons(enemyBot, primaryRemove, secondaryRemove, grenadesRemove);
 							ForcePlayerSuicide(enemyBot);
 							AddLifeForStaticKilling(enemyBot);
+							PrintToServer("ENEMY STATIC - KILLING");
+							g_badSpawnPos_Track[enemyBot] = enemyPos;
+							//PrintToServer("Add to g_badSpawnPos_Array | enemyPos: (%f, %f, %f) | g_badSpawnPos_Array Size: %d", enemyPos[0],enemyPos[1],enemyPos[2], GetArraySize(g_badSpawnPos_Array));
+							//PushArrayArray(g_badSpawnPos_Array, enemyPos, sizeof(enemyPos));
 						}
 						// Update current position
 						else
@@ -2252,7 +2296,7 @@ public Action:Timer_CheckEnemyStatic(Handle:Timer)
 						else 
 							capDistance = 801;
 						// If enemy position is static, kill him
-						if (tDistance <= 4 && (capDistance > 800))// || g_botStaticGlobal[enemyBot] > 120)) 
+						if (tDistance <= 4 && (capDistance > 800) && Check_NearbyPlayers(enemyBot))// || g_botStaticGlobal[enemyBot] > 120)) 
 						{
 							//PrintToServer("ENEMY STATIC - KILLING");
 							RemoveWeapons(enemyBot, primaryRemove, secondaryRemove, grenadesRemove);
@@ -2579,6 +2623,8 @@ CheckSpawnPoint(Float:vecSpawn[3],client,Float:tObjectiveDistance,Int:m_nActiveP
 	new m_iTeam = GetClientTeam(client);
 	new Float:distance,Float:furthest,Float:closest=-1.0;
 	new Float:vecOrigin[3];
+	new Float:tBadPos[3];
+
 	GetClientAbsOrigin(client,vecOrigin);
 	new Float:tMinPlayerDistMult = 0;
 
@@ -2639,7 +2685,33 @@ CheckSpawnPoint(Float:vecSpawn[3],client,Float:tObjectiveDistance,Int:m_nActiveP
 		 return 0;
 	}
 
-	
+
+	//Check against bad spawn positions
+	// if (Ins_InCounterAttack())
+	// {
+	// 	for (new client = 0; client < MaxClients; client++) {
+	// 		if (!IsValidClient(client) || client <= 0)
+	// 			continue;
+	// 		if (!IsClientInGame(client))
+	// 			continue;
+	// 		if (g_badSpawnPos_Track[client][0] == 0 && g_badSpawnPos_Track[client][1] == 0 && g_badSpawnPos_Track[client][2] == 0)
+	// 			continue;
+
+	// 		int m_iTeam = GetClientTeam(client);
+	// 		if (IsFakeClient(client) && m_iTeam == TEAM_2)
+	// 		{
+	// 			distance = GetVectorDistance(vecSpawn,g_badSpawnPos_Track[client]);
+
+	// 			//GetArrayArray(g_badSpawnPos_Array, badPos, tBadPos, sizeof(tBadPos));
+
+	// 			if (distance <= 240) {
+	// 					PrintToServer("BAD POS DETECTED: (%f, %f, %f)", g_badSpawnPos_Track[client][0], g_badSpawnPos_Track[client][1], g_badSpawnPos_Track[client][2]);
+	// 					return 0;
+	// 				}
+	// 		}
+
+	// 	} 
+	// }
 	//Check distance to point in counterattack
 	// if (Ins_InCounterAttack() || ((acp+1) == ncp)) {
 	// 	new m_nActivePushPointIndex2 = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
@@ -2652,10 +2724,16 @@ CheckSpawnPoint(Float:vecSpawn[3],client,Float:tObjectiveDistance,Int:m_nActiveP
 
 	// 	distance = GetVectorDistance(vecSpawn,m_vCPPositions[m_nActivePushPointIndex2]);
 
-
-	// 	// if (distance < g_flMinCounterattackDistance) {
-	// 	// 	 return 0;
-	// 	// }
+	// Get the number of control points
+	// new ncp = Ins_ObjectiveResource_GetProp("m_iNumControlPoints");
+	
+	// // Get active push point
+	// new acp3 = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
+	// if (Ins_InCounterAttack() || ((acp3+1) == ncp)) {
+	// 	if (distance < g_flMinCounterattackDistance) {
+	// 		 return 0;
+	// 	}
+	// }
 	// 	if (distance > (tObjectiveDistance * g_DynamicRespawn_Distance_mult) || (fRandomFloat <= g_dynamicSpawnCounter_Perc)) {
 	// 		 return 0;
 
@@ -2731,17 +2809,48 @@ CheckSpawnPointPlayers(Float:vecSpawn[3],client) {
 
 	// 	distance = GetVectorDistance(vecSpawn,m_vCPPositions[m_nActivePushPointIndex]);
 
-	// 	if (distance < g_flMinCounterattackDistance) { 
+	// Get the number of control points
+	// new ncp = Ins_ObjectiveResource_GetProp("m_iNumControlPoints");
+	
+	// // Get active push point
+	// new acp3 = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
+	// if (Ins_InCounterAttack() || ((acp3+1) == ncp)) {
+	// 	if (distance < g_flMinCounterattackDistance) {
 	// 		 return 0;
 	// 	}
-	 	new fRandomInt = GetRandomInt(1, 100);
-		if (distance > g_flMaxObjectiveDistance && fRandomInt < 50) {
-			 return 0;
+	// }
+	 // 	new fRandomInt = GetRandomInt(1, 100);
+		// if (distance > g_flMaxObjectiveDistance && fRandomInt < 50) {
+		// 	 return 0;
 
-		} 
-	 // 	else if (distance > (g_flMaxObjectiveDistance * g_DynamicRespawn_Distance_mult)) {
-	 // 		 return 0;
-	 // }
+		// } 
+
+	//Check against bad spawn positions
+	// if (Ins_InCounterAttack())
+	// {
+	// 	for (new client = 0; client < MaxClients; client++) {
+	// 		if (!IsValidClient(client) || client <= 0)
+	// 			continue;
+	// 		if (!IsClientInGame(client))
+	// 			continue;
+	// 		if (g_badSpawnPos_Track[client][0] == 0 && g_badSpawnPos_Track[client][1] == 0 && g_badSpawnPos_Track[client][2] == 0)
+	// 			continue;
+
+	// 		int m_iTeam = GetClientTeam(client);
+	// 		if (IsFakeClient(client) && m_iTeam == TEAM_2)
+	// 		{
+	// 			distance = GetVectorDistance(vecSpawn,g_badSpawnPos_Track[client]);
+
+	// 			//GetArrayArray(g_badSpawnPos_Array, badPos, tBadPos, sizeof(tBadPos));
+
+	// 			if (distance <= 240) {
+	// 					PrintToServer("BAD POS DETECTED: (%f, %f, %f)", g_badSpawnPos_Track[client][0], g_badSpawnPos_Track[client][1], g_badSpawnPos_Track[client][2]);
+	// 					return 0;
+	// 				}
+	// 		}
+
+	// 	} 
+	// }
 		
 		
 	//  }
@@ -2761,11 +2870,14 @@ public GetPushPointIndex(Float:fRandomFloat, client)
 	//new Float:distance = GetVectorDistance(vecSpawn,m_vCPPositions[m_nActivePushPointIndex]);
 	//Check last point	
  		
-	if (((acp+1) >= ncp && Ins_InCounterAttack()) || g_spawnFrandom[client] < g_dynamicSpawnCounter_Perc || (Ins_InCounterAttack()) || (m_nActivePushPointIndex > 1))
+	if (((acp+1) == ncp && Ins_InCounterAttack()) || g_spawnFrandom[client] < g_dynamicSpawnCounter_Perc || (Ins_InCounterAttack()) || (m_nActivePushPointIndex > 1))
  	{
  		//PrintToServer("###POINT_MOD### | fRandomFloat: %f | g_dynamicSpawnCounter_Perc %f ",fRandomFloat, g_dynamicSpawnCounter_Perc);
- 		if ((acp+1) >= ncp && Ins_InCounterAttack())
- 			m_nActivePushPointIndex--;
+ 		if ((acp+1) == ncp && Ins_InCounterAttack())
+ 		{
+ 			if (g_spawnFrandom[client] < g_dynamicSpawnCounter_Perc)
+ 				m_nActivePushPointIndex--;
+ 		}
  		else
  		{
 	 		if (Ins_InCounterAttack() && (acp+1) != ncp)
@@ -2779,7 +2891,7 @@ public GetPushPointIndex(Float:fRandomFloat, client)
 	 		{
 	 			if (m_nActivePushPointIndex > 1)
 	 			{
-	 				if (g_spawnFrandom[client] < g_dynamicSpawnCounter_Perc)
+	 				if (g_spawnFrandom[client] < g_dynamicSpawn_Perc)
 	 					m_nActivePushPointIndex--;
 	 			}
 	 		}
@@ -2806,8 +2918,9 @@ float GetSpawnPoint_SpawnPoint(client) {
 	new acp = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
 
 	new m_nActivePushPointIndex = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
-	if ((Ins_InCounterAttack() && g_spawnFrandom[client] < g_dynamicSpawnCounter_Perc) || (!Ins_InCounterAttack() && g_spawnFrandom[client] < g_dynamicSpawn_Perc && acp > 1))
+	if (((acp+1) == ncp) || (Ins_InCounterAttack() && g_spawnFrandom[client] < g_dynamicSpawnCounter_Perc) || (!Ins_InCounterAttack() && g_spawnFrandom[client] < g_dynamicSpawn_Perc && acp > 1))
 		m_nActivePushPointIndex = GetPushPointIndex(fRandomFloat, client);
+
 	new point = FindEntityByClassname(-1, "ins_spawnpoint");
 	new Float:tObjectiveDistance = g_flMinObjectiveDistance;
 	while (point != -1) {
@@ -2960,7 +3073,6 @@ public Action:Event_Spawn(Handle:event, const String:name[], bool:dontBroadcast)
 	}
 
 	g_resupplyCounter[client] = GetConVarInt(sm_resupply_delay);
-	g_resupplyDeath[client] = 0;
 	//For first joining players 
 	if (g_playerFirstJoin[client] == 1 && !IsFakeClient(client))
 	{
@@ -3036,6 +3148,8 @@ public Action:Event_SpawnPost(Handle:event, const String:name[], bool:dontBroadc
 	// if (StrEqual(sNewNickname, "[INS] RoundEnd Protector"))
 	// 	return Plugin_Continue;
 
+
+	//Bots only below this
 	if (!IsFakeClient(client)) {
 		return Plugin_Continue;
 	}
@@ -3296,6 +3410,8 @@ public Action:Event_RoundStart(Handle:event, const String:name[], bool:dontBroad
 {
 
 
+	//Clear bad spawn array
+	//ClearArray(g_badSpawnPos_Array);
 
 	//Round_Start CVAR Sets ------------------ START -- vs using HookConVarChange
 
@@ -3543,6 +3659,22 @@ public Action:Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadca
 // Check occouring counter attack when control point captured
 public Action:Event_ControlPointCaptured_Pre(Handle:event, const String:name[], bool:dontBroadcast)
 {
+	//Clear bad spawn array
+	//ClearArray(g_badSpawnPos_Array);
+	for (new client = 0; client < MaxClients; client++) {
+		if (!IsValidClient(client) || client <= 0)
+				continue;
+		if (!IsClientInGame(client))
+			continue;
+		int m_iTeam = GetClientTeam(client);
+		if (IsFakeClient(client) && m_iTeam == TEAM_2)
+		{
+			g_badSpawnPos_Track[client][0] = 0;
+			g_badSpawnPos_Track[client][1] = 0;
+			g_badSpawnPos_Track[client][2] = 0;
+		}
+	} 
+
 	g_checkStaticAmt = GetConVarInt(sm_respawn_check_static_enemy);
 	g_checkStaticAmtCntr = GetConVarInt(sm_respawn_check_static_enemy_counter);
 	// Return if conquer
@@ -3762,35 +3894,37 @@ public Action:Event_ControlPointCaptured_Post(Handle:event, const String:name[],
 	// Return if conquer
 	if (g_isConquer == 1 || g_isHunt == 1 || g_isOutpost == 1) return Plugin_Continue; 
 	
-	// Get client who captured control point.
-	decl String:cappers[256];
-	GetEventString(event, "cappers", cappers, sizeof(cappers));
-	new cappersLength = strlen(cappers);
-	for (new i = 0 ; i < cappersLength; i++)
+	if (GetConVarInt(sm_respawn_security_on_counter) == 1) //Test with Ins_InCounterAttack() later
 	{
-		new clientCapper = cappers[i];
-		if(clientCapper > 0 && IsClientInGame(clientCapper) && IsClientConnected(clientCapper) && IsPlayerAlive(clientCapper) && !IsFakeClient(clientCapper))
+		// Get client who captured control point.
+		decl String:cappers[256];
+		GetEventString(event, "cappers", cappers, sizeof(cappers));
+		new cappersLength = strlen(cappers);
+		for (new i = 0 ; i < cappersLength; i++)
 		{
-			// Get player's position
-			new Float:capperPos[3];
-			GetClientAbsOrigin(clientCapper, Float:capperPos);
-			
-			// Update respawn position
-			g_fRespawnPosition = capperPos;
-			
-			break;
+			new clientCapper = cappers[i];
+			if(clientCapper > 0 && IsClientInGame(clientCapper) && IsClientConnected(clientCapper) && IsPlayerAlive(clientCapper) && !IsFakeClient(clientCapper))
+			{
+				// Get player's position
+				new Float:capperPos[3];
+				GetClientAbsOrigin(clientCapper, Float:capperPos);
+				
+				// Update respawn position
+				g_fRespawnPosition = capperPos;
+				
+				break;
+			}
 		}
-	}
-	
-	// Respawn all players
-	if (GetConVarInt(sm_respawn_security_on_counter) == 1)
-	{
+
+		// Respawn all players
 		for (new client = 1; client <= MaxClients; client++)
 		{
 			if (IsClientInGame(client) && IsClientConnected(client))
 			{
 				new team = GetClientTeam(client);
-				if(IsClientInGame(client) && playerPickSquad[client] == 1 && !IsPlayerAlive(client) && team == TEAM_1 /*&& !IsClientTimingOut(client) && playerFirstDeath[client] == true*/ )
+				new Float:clientPos[3];
+				GetClientAbsOrigin(client, Float:clientPos);
+				if (playerPickSquad[client] == 1 && !IsPlayerAlive(client) && team == TEAM_1)
 				{
 					if (!IsFakeClient(client))
 					{
@@ -3805,7 +3939,6 @@ public Action:Event_ControlPointCaptured_Post(Handle:event, const String:name[],
 			}
 		}
 	}
-	
 	// //Elite Bots Reset
 	// if (g_elite_counter_attacks == 1)
 	// 	CreateTimer(5.0, Timer_EliteBots);
@@ -3823,6 +3956,24 @@ public Action:Event_ControlPointCaptured_Post(Handle:event, const String:name[],
 // When ammo cache destroyed, update respawn position and reset variables
 public Action:Event_ObjectDestroyed_Pre(Handle:event, const String:name[], bool:dontBroadcast)
 {
+
+
+	//Clear bad spawn array
+	//ClearArray(g_badSpawnPos_Array);
+	for (new client = 0; client < MaxClients; client++) {
+		if (!IsValidClient(client) || client <= 0)
+				continue;
+		if (!IsClientInGame(client))
+			continue;
+		int m_iTeam = GetClientTeam(client);
+		if (IsFakeClient(client) && m_iTeam == TEAM_2)
+		{
+			g_badSpawnPos_Track[client][0] = 0;
+			g_badSpawnPos_Track[client][1] = 0;
+			g_badSpawnPos_Track[client][2] = 0;
+		}
+	} 
+
 	g_checkStaticAmt = GetConVarInt(sm_respawn_check_static_enemy);
 	g_checkStaticAmtCntr = GetConVarInt(sm_respawn_check_static_enemy_counter);
 	// Return if conquer
@@ -4037,35 +4188,37 @@ public Action:Event_ObjectDestroyed_Post(Handle:event, const String:name[], bool
 	// Return if conquer
 	if (g_isConquer == 1 || g_isHunt == 1 || g_isOutpost == 1) return Plugin_Continue; 
 	
-	// Get client who captured control point.
-	decl String:cappers[256];
-	GetEventString(event, "cappers", cappers, sizeof(cappers));
-	new cappersLength = strlen(cappers);
-	for (new i = 0 ; i < cappersLength; i++)
-	{
-		new clientCapper = cappers[i];
-		if(clientCapper > 0 && IsClientInGame(clientCapper) && IsClientConnected(clientCapper) && IsPlayerAlive(clientCapper) && !IsFakeClient(clientCapper))
-		{
-			// Get player's position
-			new Float:capperPos[3];
-			GetClientAbsOrigin(clientCapper, Float:capperPos);
-			
-			// Update respawn position
-			g_fRespawnPosition = capperPos;
-			
-			break;
-		}
-	}
-	
-	// Respawn all players
 	if (GetConVarInt(sm_respawn_security_on_counter) == 1)
 	{
+		// Get client who captured control point.
+		decl String:cappers[256];
+		GetEventString(event, "cappers", cappers, sizeof(cappers));
+		new cappersLength = strlen(cappers);
+		for (new i = 0 ; i < cappersLength; i++)
+		{
+			new clientCapper = cappers[i];
+			if(clientCapper > 0 && IsClientInGame(clientCapper) && IsClientConnected(clientCapper) && IsPlayerAlive(clientCapper) && !IsFakeClient(clientCapper))
+			{
+				// Get player's position
+				new Float:capperPos[3];
+				GetClientAbsOrigin(clientCapper, Float:capperPos);
+				
+				// Update respawn position
+				g_fRespawnPosition = capperPos;
+				
+				break;
+			}
+		}
+
+		// Respawn all players
 		for (new client = 1; client <= MaxClients; client++)
 		{
 			if (IsClientInGame(client) && IsClientConnected(client))
 			{
 				new team = GetClientTeam(client);
-				if(IsClientInGame(client) && playerPickSquad[client] == 1 && !IsPlayerAlive(client) && team == TEAM_1 /*&& !IsClientTimingOut(client) && playerFirstDeath[client] == true*/ )
+				new Float:clientPos[3];
+				GetClientAbsOrigin(client, Float:clientPos);
+				if (playerPickSquad[client] == 1 && !IsPlayerAlive(client) && team == TEAM_1)
 				{
 					if (!IsFakeClient(client))
 					{
@@ -4387,9 +4540,35 @@ void EnableDisableEliteBotCvars(tEnabled, isFinale)
 		SetConVarFloat(tCvar, tCvarFloatValue, true, false);
 
 		tCvar = FindConVar("bot_attack_aimtolerance_newthreat_amt");
-		tCvarFloatValue = GetConVarInt(FindConVar("bot_attack_aimtolerance_newthreat_amt"));
-		tCvarFloatValue = tCvarFloatValue - g_bot_attack_aimtolerance_newthreat_amt_mult;
+		tCvarIntValue = GetConVarInt(FindConVar("bot_attack_aimtolerance_newthreat_amt"));
+		tCvarIntValue = tCvarIntValue - g_bot_attack_aimtolerance_newthreat_amt_mult;
+		SetConVarFloat(tCvar, tCvarIntValue, true, false);
+
+		tCvar = FindConVar("bot_aim_aimtracking_base");
+		tCvarFloatValue = GetConVarFloat(FindConVar("bot_aim_aimtracking_base"));
+		tCvarFloatValue = tCvarFloatValue - g_bot_aim_aimtracking_base;
 		SetConVarFloat(tCvar, tCvarFloatValue, true, false);
+
+		tCvar = FindConVar("bot_aim_aimtracking_frac_impossible");
+		tCvarFloatValue = GetConVarFloat(FindConVar("bot_aim_aimtracking_frac_impossible"));
+		tCvarFloatValue = tCvarFloatValue - g_bot_aim_aimtracking_frac_impossible;
+		SetConVarFloat(tCvar, tCvarFloatValue, true, false);
+
+		tCvar = FindConVar("bot_aim_angularvelocity_frac_impossible");
+		tCvarFloatValue = GetConVarFloat(FindConVar("bot_aim_angularvelocity_frac_impossible"));
+		tCvarFloatValue = tCvarFloatValue + g_bot_aim_angularvelocity_frac_impossible;
+		SetConVarFloat(tCvar, tCvarFloatValue, true, false);
+
+		tCvar = FindConVar("bot_aim_angularvelocity_frac_sprinting_target");
+		tCvarFloatValue = GetConVarFloat(FindConVar("bot_aim_angularvelocity_frac_sprinting_target"));
+		tCvarFloatValue = tCvarFloatValue + g_bot_aim_angularvelocity_frac_sprinting_target;
+		SetConVarFloat(tCvar, tCvarFloatValue, true, false);
+
+		tCvar = FindConVar("bot_aim_attack_aimtolerance_frac_impossible");
+		tCvarFloatValue = GetConVarFloat(FindConVar("bot_aim_attack_aimtolerance_frac_impossible"));
+		tCvarFloatValue = tCvarFloatValue - g_bot_aim_attack_aimtolerance_frac_impossible;
+		SetConVarFloat(tCvar, tCvarFloatValue, true, false);
+		//Make sure to check for FLOATS vs INTS and +/-!
 	}
 	else
 	{
@@ -4410,11 +4589,23 @@ void EnableDisableEliteBotCvars(tEnabled, isFinale)
 		tCvar = FindConVar("bot_attack_aimpenalty_amt_far");
 		SetConVarInt(tCvar, g_bot_attack_aimpenalty_amt_far_org, true, false);
 		tCvar = FindConVar("bot_attack_aimpenalty_time_close");
-		SetConVarInt(tCvar, g_bot_attack_aimpenalty_time_close_org, true, false);
+		SetConVarFloat(tCvar, g_bot_attack_aimpenalty_time_close_org, true, false);
 		tCvar = FindConVar("bot_attack_aimpenalty_time_far");
-		SetConVarInt(tCvar, g_bot_attack_aimpenalty_time_far_org, true, false);
+		SetConVarFloat(tCvar, g_bot_attack_aimpenalty_time_far_org, true, false);
 		tCvar = FindConVar("bot_attack_aimtolerance_newthreat_amt");
 		SetConVarFloat(tCvar, g_bot_attack_aimtolerance_newthreat_amt_org, true, false);
+
+		tCvar = FindConVar("bot_aim_aimtracking_base");
+		SetConVarFloat(tCvar, g_bot_aim_aimtracking_base_org, true, false);
+		tCvar = FindConVar("bot_aim_aimtracking_frac_impossible");
+		SetConVarFloat(tCvar, g_bot_aim_aimtracking_frac_impossible_org, true, false);
+		tCvar = FindConVar("bot_aim_angularvelocity_frac_impossible");
+		SetConVarFloat(tCvar, g_bot_aim_angularvelocity_frac_impossible_org, true, false);
+		tCvar = FindConVar("bot_aim_angularvelocity_frac_sprinting_target");
+		SetConVarFloat(tCvar, g_bot_aim_angularvelocity_frac_sprinting_target_org, true, false);
+		tCvar = FindConVar("bot_aim_attack_aimtolerance_frac_impossible");
+		SetConVarFloat(tCvar, g_bot_aim_attack_aimtolerance_frac_impossible_org, true, false);
+
 	}
 }
 
@@ -4428,6 +4619,12 @@ public Action:cmd_kill(client, args) {
 // When counter-attack end, reset reinforcement time
 public Action:Timer_CounterAttackEnd(Handle:Timer)
 {
+
+
+	//Clear bad spawn array
+	//ClearArray(g_badSpawnPos_Array);
+
+	
 	//g_bIsCounterAttackTimerActive = false;
 	// If round end, exit
 	// if (g_iRoundStatus == 0)
@@ -4468,6 +4665,20 @@ public Action:Timer_CounterAttackEnd(Handle:Timer)
 		cvar = FindConVar("mp_checkpoint_counterattack_always");
 		SetConVarInt(cvar, 0, true, false);
 		
+		for (new client = 0; client < MaxClients; client++) {
+			if (!IsValidClient(client) || client <= 0)
+				continue;
+			if (!IsClientInGame(client))
+				continue;
+			int m_iTeam = GetClientTeam(client);
+			if (IsFakeClient(client) && m_iTeam == TEAM_2)
+			{
+				g_badSpawnPos_Track[client][0] = 0;
+				g_badSpawnPos_Track[client][1] = 0;
+				g_badSpawnPos_Track[client][2] = 0;
+			}
+		} 
+
 		//PrintToServer("[RESPAWN] Counter-attack is over.");
 		return Plugin_Stop;
 	//}
@@ -4494,7 +4705,12 @@ void ResetSecurityLives()
 {
 	// Disable if counquer
 	//if (g_isConquer == 1 || g_isOutpost == 1) return;
-	
+		// The number of control points
+	new ncp = Ins_ObjectiveResource_GetProp("m_iNumControlPoints");
+	// Active control poin
+	new acp = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
+
+
 	// Return if respawn is disabled
 	if (!g_iCvar_respawn_enable) return;
 	
@@ -4523,7 +4739,20 @@ void ResetSecurityLives()
 				if (g_isConquer == 1 || g_isOutpost == 1 || g_isHunt == 1)
 					g_iSpawnTokens[client] = g_iRespawnCount[iTeam] + 10;
 				else
-					g_iSpawnTokens[client] = g_iRespawnCount[iTeam];
+				{
+					if (StrContains(g_client_last_classstring[client], "medic") > -1 && !((acp+1) == ncp))
+						g_iSpawnTokens[client] = g_iRespawnCount[iTeam] + 1;
+					else
+						{
+							// Final counter attack
+							// if ((acp+1) == ncp)
+							// {
+							// 	g_iRespawnCount[iTeam] = 1;
+							// }
+							// else
+								g_iSpawnTokens[client] = g_iRespawnCount[iTeam];
+						}
+				}
 			}
 		}
 	}
@@ -4625,10 +4854,10 @@ public Action:Event_PlayerPickSquad_Post( Handle:event, const String:name[], boo
 	{
 		// Admin medic
 		if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][管理][医疗] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[管理][医疗] %s", g_client_org_nickname[client]);
 		// Donor medic
 		else if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_RESERVATION))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][医疗] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[会员][医疗] %s", g_client_org_nickname[client]);
 		// Normal medic
 		else
 			Format(sNewNickname, sizeof(sNewNickname), "[医疗] %s", g_client_org_nickname[client]);
@@ -4637,10 +4866,10 @@ public Action:Event_PlayerPickSquad_Post( Handle:event, const String:name[], boo
 	{
 		// Admin medic
 		if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][管理][破障] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[管理][破障] %s", g_client_org_nickname[client]);
 		// Donor medic
 		else if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_RESERVATION))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][破障] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[会员][破障] %s", g_client_org_nickname[client]);
 		// Normal medic
 		else
 			Format(sNewNickname, sizeof(sNewNickname), "[破障] %s", g_client_org_nickname[client]);
@@ -4649,10 +4878,10 @@ public Action:Event_PlayerPickSquad_Post( Handle:event, const String:name[], boo
 	{
 		// Admin medic
 		if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][管理][队长] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[管理][队长] %s", g_client_org_nickname[client]);
 		// Donor medic
 		else if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_RESERVATION))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][队长] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[会员][队长] %s", g_client_org_nickname[client]);
 		// Normal medic
 		else
 			Format(sNewNickname, sizeof(sNewNickname), "[队长] %s", g_client_org_nickname[client]);
@@ -4661,10 +4890,10 @@ public Action:Event_PlayerPickSquad_Post( Handle:event, const String:name[], boo
 	{
 		// Admin medic
 		if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][管理][狙击] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[管理][狙击] %s", g_client_org_nickname[client]);
 		// Donor medic
 		else if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_RESERVATION))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][狙击] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[会员][狙击] %s", g_client_org_nickname[client]);
 		// Normal medic
 		else
 			Format(sNewNickname, sizeof(sNewNickname), "[狙击] %s", g_client_org_nickname[client]);
@@ -4673,10 +4902,10 @@ public Action:Event_PlayerPickSquad_Post( Handle:event, const String:name[], boo
 	{
 		// Admin medic
 		if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][管理][精确] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[管理][精确] %s", g_client_org_nickname[client]);
 		// Donor medic
 		else if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_RESERVATION))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][精确] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[会员][精确] %s", g_client_org_nickname[client]);
 		// Normal medic
 		else
 			Format(sNewNickname, sizeof(sNewNickname), "[精确] %s", g_client_org_nickname[client]);
@@ -4685,10 +4914,10 @@ public Action:Event_PlayerPickSquad_Post( Handle:event, const String:name[], boo
 	{
 		// Admin medic
 		if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][管理][爆破] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[管理][爆破] %s", g_client_org_nickname[client]);
 		// Donor medic
 		else if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_RESERVATION))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][爆破] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[会员][爆破] %s", g_client_org_nickname[client]);
 		// Normal medic
 		else
 			Format(sNewNickname, sizeof(sNewNickname), "[爆破] %s", g_client_org_nickname[client]);
@@ -4697,10 +4926,10 @@ public Action:Event_PlayerPickSquad_Post( Handle:event, const String:name[], boo
 	{
 		// Admin medic
 		if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][管理][火力] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[管理][火力] %s", g_client_org_nickname[client]);
 		// Donor medic
 		else if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_RESERVATION))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][火力] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[会员][火力] %s", g_client_org_nickname[client]);
 		// Normal medic
 		else
 			Format(sNewNickname, sizeof(sNewNickname), "[火力] %s", g_client_org_nickname[client]);
@@ -4709,10 +4938,10 @@ public Action:Event_PlayerPickSquad_Post( Handle:event, const String:name[], boo
 	{
 		// Admin medic
 		if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][管理][步枪] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[管理][步枪] %s", g_client_org_nickname[client]);
 		// Donor medic
 		else if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_RESERVATION))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][步枪] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[会员][步枪] %s", g_client_org_nickname[client]);
 		// Normal medic
 		else
 			Format(sNewNickname, sizeof(sNewNickname), "[步枪] %s", g_client_org_nickname[client]);
@@ -4721,10 +4950,10 @@ public Action:Event_PlayerPickSquad_Post( Handle:event, const String:name[], boo
 	{
 		// Admin medic
 		if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][管理][专家] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[管理][专家] %s", g_client_org_nickname[client]);
 		// Donor medic
 		else if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_RESERVATION))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][专家] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[会员][专家] %s", g_client_org_nickname[client]);
 		// Normal medic
 		else
 			Format(sNewNickname, sizeof(sNewNickname), "[专家] %s", g_client_org_nickname[client]);
@@ -4734,10 +4963,10 @@ public Action:Event_PlayerPickSquad_Post( Handle:event, const String:name[], boo
 	{
 		// Admin
 		if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_ROOT))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ][管理] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[管理] %s", g_client_org_nickname[client]);
 		// Donor
 		else if (GetConVarInt(sm_respawn_enable_donor_tag) == 1 && (GetUserFlagBits(client) & ADMFLAG_RESERVATION))
-			Format(sNewNickname, sizeof(sNewNickname), "[ŠiΣ] %s", g_client_org_nickname[client]);
+			Format(sNewNickname, sizeof(sNewNickname), "[会员] %s", g_client_org_nickname[client]);
 		// Normal player
 		else
 			Format(sNewNickname, sizeof(sNewNickname), "%s", g_client_org_nickname[client]);
@@ -5019,7 +5248,7 @@ public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 		g_iStatSuicides[victim]++;
 		g_iStatDeaths[victim]++;
 	}
-	//
+
 	////////////////////////
 	
 	// Get player ID
@@ -5212,8 +5441,7 @@ public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 		woundType = "中度伤";
 	else if (g_playerWoundType[client] == 2)
 		woundType = "重伤";
-	if (g_resupplyDeath[client] == 0)
-	{
+
 		// Display death message
 		if (g_fCvar_fatal_chance > 0.0)
 		{
@@ -5236,7 +5464,7 @@ public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 			PrintHintText(client, "%s", wound_hint);
 			PrintToChat(client, "%s", wound_hint);
 		}
-	}
+	
 		
 	// Update remaining life
 	new Handle:hCvar = INVALID_HANDLE;
@@ -5355,26 +5583,39 @@ public CreateCounterRespawnTimer(client)
 // Respawn bot
 public CreateBotRespawnTimer(client)
 {	
-	if (!Ins_InCounterAttack() && ((StrContains(g_client_last_classstring[client], "bomber") > -1) || (StrContains(g_client_last_classstring[client], "juggernaut") > -1))) //make sure its a bot bomber
+	if ((g_cqc_map_enabled == 1 && Ins_InCounterAttack() && ((StrContains(g_client_last_classstring[client], "bomber") > -1) || (StrContains(g_client_last_classstring[client], "juggernaut") > -1))) || (!Ins_InCounterAttack() && ((StrContains(g_client_last_classstring[client], "bomber") > -1) || (StrContains(g_client_last_classstring[client], "juggernaut") > -1)))) //make sure its a bot bomber
 	{
 		new fRandomFloat = GetRandomFloat(0, 1);
 		new tSpecRespawnDelay = 0;
-		if (fRandomFloat < 0.5)
-			tSpecRespawnDelay += 4;
-		else
-			tSpecRespawnDelay -= 4;
 
-		if (tSpecRespawnDelay < 0)
-			tSpecRespawnDelay = 1;
-
-		fRandomFloat = GetRandomFloat(0, 1);
-		if (fRandomFloat < 0.5)
-			CreateTimer((g_fCvar_respawn_delay_team_ins_spec - tSpecRespawnDelay), RespawnBot, client);
+		if (g_cqc_map_enabled == 1 && Ins_InCounterAttack())
+		{
+			if (StrContains(g_client_last_classstring[client], "bomber") > -1)
+			{
+				PrintToServer("BOMBER SPAWN: Delay %f", (g_fCvar_respawn_delay_team_ins_spec / 3));
+				CreateTimer((g_fCvar_respawn_delay_team_ins_spec / 3), RespawnBot, client);
+			}
+			else if (StrContains(g_client_last_classstring[client], "juggernaut") > -1)
+			{
+				PrintToServer("JUGGER SPAWN: Delay %f", (g_fCvar_respawn_delay_team_ins_spec / 4));
+				CreateTimer((g_fCvar_respawn_delay_team_ins_spec / 4), RespawnBot, client);
+			}
+		}
 		else
-			CreateTimer((g_fCvar_respawn_delay_team_ins_spec + tSpecRespawnDelay), RespawnBot, client);
+		{
+			if (StrContains(g_client_last_classstring[client], "bomber") > -1)
+			{
+				CreateTimer((g_fCvar_respawn_delay_team_ins_spec * 2), RespawnBot, client);
+			}
+			else if (StrContains(g_client_last_classstring[client], "juggernaut") > -1)
+			{
+				CreateTimer((g_fCvar_respawn_delay_team_ins_spec), RespawnBot, client);
+			}
+		}
 	}
 	else
 		CreateTimer(g_fCvar_respawn_delay_team_ins, RespawnBot, client);
+	
 }
 
 // Respawn player
@@ -5407,7 +5648,7 @@ public Action:RespawnPlayerRevive(Handle:Timer, any:client)
 	
 	// If set 'sm_respawn_enable_track_ammo', restore player's ammo
 	 if (playerRevived[client] == true && g_iCvar_enable_track_ammo == 1)
-	 	SetPlayerAmmo(client);
+	 	SetPlayerAmmo(client); //AmmoResupply_Player(client, 0, 0, 1);
 	
 	//Set wound health
 	new iHealth = GetClientHealth(client);
@@ -5513,8 +5754,14 @@ public Action:RespawnPlayerPostCounter(Handle:timer, any:client)
 	if (!IsClientInGame(client)) return;
 	
 	// If set 'sm_respawn_enable_track_ammo', restore player's ammo
-	 if (g_iCvar_enable_track_ammo == 1)
-	 	SetPlayerAmmo(client);
+		// Get the number of control points
+	new ncp = Ins_ObjectiveResource_GetProp("m_iNumControlPoints");
+	// Get active push point
+	new acp = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
+	
+	//Remove grenades if not finale
+	if (g_iCvar_enable_track_ammo == 1 && (acp+1) != ncp)
+	 	SetPlayerAmmo(client); //AmmoResupply_Player(client, 0, 0, 1); //SetPlayerAmmo(client);
 	
 	// Teleport to avtive counter attack point
 	//PrintToServer("[REVIVE_DEBUG] called RespawnPlayerPost for client %N (%d)",client,client);
@@ -6540,13 +6787,22 @@ public Action:Timer_AIDirector_Main(Handle:timer, any:data)
 	g_AIDir_AnnounceCounter++;
 	g_AIDir_ChangeCond_Counter++;
 	g_AIDir_AmbushCond_Counter++;
+	
+	//Ambush Reinforcement Chance
+	new tAmbushChance = GetRandomInt(0, 100);
 
 	//AI Director DEBUG
 	if (g_AIDir_AnnounceCounter >= g_AIDir_AnnounceTrig)
 	{
 		g_AIDir_AnnounceCounter = 0;
-		g_AIDir_AnnounceTrig = 5;
-		PrintToServer("[AI_DIRECTOR] STATUS: %i | g_AIDir_RandomDiff: %d ", g_AIDir_TeamStatus, g_AIDir_RandomDiff);
+		new tIsInCounter = 0;
+		if (Ins_InCounterAttack())
+			tIsInCounter = 1;
+
+		PrintToServer("[AI_DIRECTOR] STATUS: %i | g_AIDir_CurrDiff %d | InCounter: %d | DiffChanceBase: %d", g_AIDir_TeamStatus, g_AIDir_CurrDiff, tIsInCounter, g_AIDir_DiffChanceBase);
+		PrintToServer("[AI_DIRECTOR]: Ambush_Counter: %d | tAmbushChance: %d | AmbushCond_Chance %d",g_AIDir_AmbushCond_Counter, tAmbushChance, g_AIDir_AmbushCond_Chance);
+		PrintToServer("[AI_DIRECTOR]: AmbushCond_Chance: %d | ChangeCond_Counter: %d | ChangeCond_Rand %d",g_AIDir_AmbushCond_Rand, g_AIDir_ChangeCond_Counter, g_AIDir_ChangeCond_Rand);
+			
 	}
 
 	//AI Director Set Difficulty
@@ -6558,8 +6814,6 @@ public Action:Timer_AIDirector_Main(Handle:timer, any:data)
 		AI_Director_SetDifficulty(g_AIDir_TeamStatus, g_AIDir_TeamStatus_max);
 	}
 
-	//Ambush Reinforcement Chance
-	new tAmbushChance = GetRandomInt(0, 100);
 	if (g_AIDir_AmbushCond_Counter >= g_AIDir_AmbushCond_Rand)
 	{
 		if (tAmbushChance <= g_AIDir_AmbushCond_Chance)
@@ -6576,6 +6830,19 @@ public Action:Timer_AIDirector_Main(Handle:timer, any:data)
 			g_AIDir_AmbushCond_Rand = GetRandomInt(g_AIDir_AmbushCond_Min, g_AIDir_AmbushCond_Max);
 		}
 	}
+
+	// Get the number of control points
+	new ncp = Ins_ObjectiveResource_GetProp("m_iNumControlPoints");
+	// Get active push point
+	new acp = Ins_ObjectiveResource_GetProp("m_nActivePushPointIndex");
+	
+	//Confirm percent finale
+	if ((acp+1) == ncp)
+	{
+		if (g_finale_counter_spec_enabled == 1)
+				g_dynamicSpawnCounter_Perc = g_finale_counter_spec_percent;
+	}
+
 	return Plugin_Continue;
 
 }
@@ -6623,9 +6890,8 @@ public Action:Timer_AmmoResupply(Handle:timer, any:data)
 					if (g_resupplyCounter[client] <= 0)
 					{
 						g_resupplyCounter[client] = GetConVarInt(sm_resupply_delay);
-						g_resupplyDeath[client] = 1;
 						//Spawn player again
-						AmmoResupply_Player(client);
+						AmmoResupply_Player(client, 0, 0, 0);
 						
 
 						g_ammoResupplyAmt[validAmmoCache] -= 1;
@@ -6647,20 +6913,14 @@ public Action:Timer_AmmoResupply(Handle:timer, any:data)
 	return Plugin_Continue;
 }
 
-public AmmoResupply_Player(client)
+public AmmoResupply_Player(client, primaryRemove, secondaryRemove, grenadesRemove)
 {
 
-	new primaryRemove = 0, secondaryRemove = 0, grenadesRemove = 0;
 	new Float:plyrOrigin[3];
 	new Float:tempOrigin[3];
 	GetClientAbsOrigin(client,plyrOrigin);
 	tempOrigin = plyrOrigin;
 	tempOrigin[2] = -5000;
-
-	primaryRemove = 1;
-	secondaryRemove = 1; 
-	grenadesRemove = 0;
-	RemoveWeapons(client, primaryRemove, secondaryRemove, grenadesRemove);
 
 	//TeleportEntity(client, tempOrigin, NULL_VECTOR, NULL_VECTOR);
 	//ForcePlayerSuicide(client);
@@ -6683,9 +6943,6 @@ public AmmoResupply_Player(client)
 
 	ForceRespawnPlayer(client, client);
 	TeleportEntity(client, plyrOrigin, NULL_VECTOR, NULL_VECTOR);
-	primaryRemove = 0;
-	secondaryRemove = 0; 
-	grenadesRemove = 0;
 	RemoveWeapons(client, primaryRemove, secondaryRemove, grenadesRemove);
 	PrintHintText(client, "弹药已重新补给!");
 	// //Give back life
@@ -7006,6 +7263,35 @@ public Action:Timer_NearestBody(Handle:timer, any:data)
 	}
 	
 	return Plugin_Continue;
+}
+
+
+public Check_NearbyPlayers(enemyBot)
+{
+	for (new client = 1; client <= MaxClients; client++)
+	{
+		if (IsClientConnected(client) && IsClientInGame(client) && !IsFakeClient(client))
+		{
+			if (IsPlayerAlive(client))
+			{
+				new Float:botOrigin[3];
+				new Float:clientOrigin[3];
+				new Float:fDistance;
+		
+				GetClientAbsOrigin(enemyBot,botOrigin);
+				GetClientAbsOrigin(client,clientOrigin);
+				
+				//determine distance from the two
+				fDistance = GetVectorDistance(botOrigin,clientOrigin);
+
+				if (fDistance <= 600)
+				{
+					return true;
+				}
+			}
+		}
+	}
+	return false;
 }
 
 /**
@@ -8898,7 +9184,7 @@ public AI_Director_SetDifficulty(g_AIDir_TeamStatus, g_AIDir_TeamStatus_max)
 	//AI Director Local Scaling Vars
 	new 
 		AID_ReinfAdj_low = 10, AID_ReinfAdj_med = 20, AID_ReinfAdj_high = 30, AID_ReinfAdj_pScale = 0,
-		Float:AID_SpecDelayAdj_low = 2, Float:AID_SpecDelayAdj_med = 4, Float:AID_SpecDelayAdj_high = 6, Float:AID_SpecDelayAdj_pScale = 0,
+		Float:AID_SpecDelayAdj_low = 10, Float:AID_SpecDelayAdj_med = 20, Float:AID_SpecDelayAdj_high = 30, Float:AID_SpecDelayAdj_pScale_Pro = 0, Float:AID_SpecDelayAdj_pScale_Con = 0,
 		AID_AmbChance_vlow = 5, AID_AmbChance_low = 10, AID_AmbChance_med = 15, AID_AmbChance_high = 20, AID_AmbChance_pScale = 0;
 	new AID_SetDiffChance_pScale = 0;
 
@@ -8906,21 +9192,25 @@ public AI_Director_SetDifficulty(g_AIDir_TeamStatus, g_AIDir_TeamStatus_max)
 	new tTeamSecCount = GetTeamSecCount();
 	if (tTeamSecCount <= 6)
 	{
-		AID_ReinfAdj_pScale = 6;
-		AID_SpecDelayAdj_pScale = 2;
-		AID_AmbChance_pScale = 5;
+		AID_ReinfAdj_pScale = 8;
+		AID_SpecDelayAdj_pScale_Pro = 30;
+		AID_SpecDelayAdj_pScale_Con = 10;
 	}
 	else if (tTeamSecCount >= 7 && tTeamSecCount <= 12)
 	{
 		AID_ReinfAdj_pScale = 4;
-		AID_SpecDelayAdj_pScale = 2;
+		AID_SpecDelayAdj_pScale_Pro = 20;
+		AID_SpecDelayAdj_pScale_Con = 20;
 		AID_AmbChance_pScale = 5;
+		AID_SetDiffChance_pScale = 5;
 	}
 	else if (tTeamSecCount >= 13)
 	{
 		AID_ReinfAdj_pScale = 8;
-		AID_SpecDelayAdj_pScale = 4;
+		AID_SpecDelayAdj_pScale_Pro = 10;
+		AID_SpecDelayAdj_pScale_Con = 30;
 		AID_AmbChance_pScale = 10;
+		AID_SetDiffChance_pScale = 10;
 	}
 
 	// Get the number of control points
@@ -8930,9 +9220,13 @@ public AI_Director_SetDifficulty(g_AIDir_TeamStatus, g_AIDir_TeamStatus_max)
 
 	new tAmbScaleMult = 2;
 	if (ncp <= 5)
+	{
 		tAmbScaleMult = 3;
+		AID_SetDiffChance_pScale += 5;
+	}
 	//Add More to Ambush chance based on what point we are at. 
 	AID_AmbChance_pScale += (acp * tAmbScaleMult);
+	AID_SetDiffChance_pScale += (acp * tAmbScaleMult);
 
 	new Float:cvarSpecDelay = GetConVarFloat(sm_respawn_delay_team_ins_special);
 	new fRandomInt = GetRandomInt(0, 100);
@@ -8947,10 +9241,12 @@ public AI_Director_SetDifficulty(g_AIDir_TeamStatus, g_AIDir_TeamStatus_max)
 		g_iReinforceTimeSubsequent_AD_Temp = ((g_AIDir_ReinforceTimer_SubOrig - AID_ReinfAdj_high) - AID_ReinfAdj_pScale);
 
 		//Mod specialized bot spawn interval
-		g_fCvar_respawn_delay_team_ins_spec = ((cvarSpecDelay - AID_SpecDelayAdj_high) - AID_SpecDelayAdj_pScale);
+		g_fCvar_respawn_delay_team_ins_spec = ((cvarSpecDelay - AID_SpecDelayAdj_high) - AID_SpecDelayAdj_pScale_Con);
+		if (g_fCvar_respawn_delay_team_ins_spec <= 0)
+			g_fCvar_respawn_delay_team_ins_spec = 1;
 
-		//Track when AI Dir sets this to max difficult
-		g_AIDir_RandomDiff = 1;
+		//DEBUG: Track Current Difficulty setting
+		g_AIDir_CurrDiff = 5;
 
 		//Set Ambush Chance
 		g_AIDir_AmbushCond_Chance = AID_AmbChance_high + AID_AmbChance_pScale;
@@ -8959,14 +9255,14 @@ public AI_Director_SetDifficulty(g_AIDir_TeamStatus, g_AIDir_TeamStatus_max)
 	else if (g_AIDir_TeamStatus < (g_AIDir_TeamStatus_max / 4))
 	{
 		//Set Reinforce Time
-		g_iReinforceTime_AD_Temp = ((g_AIDir_ReinforceTimer_Orig + AID_ReinfAdj_med) + AID_ReinfAdj_pScale);
-		g_iReinforceTimeSubsequent_AD_Temp = ((g_AIDir_ReinforceTimer_SubOrig + AID_ReinfAdj_med) + AID_ReinfAdj_pScale);
+		g_iReinforceTime_AD_Temp = ((g_AIDir_ReinforceTimer_Orig + AID_ReinfAdj_high) + AID_ReinfAdj_pScale);
+		g_iReinforceTimeSubsequent_AD_Temp = ((g_AIDir_ReinforceTimer_SubOrig + AID_ReinfAdj_high) + AID_ReinfAdj_pScale);
 
 		//Mod specialized bot spawn interval
-		g_fCvar_respawn_delay_team_ins_spec = ((cvarSpecDelay - AID_SpecDelayAdj_med) + AID_SpecDelayAdj_pScale);
+		g_fCvar_respawn_delay_team_ins_spec = ((cvarSpecDelay + AID_SpecDelayAdj_high) + AID_SpecDelayAdj_pScale_Pro);
 
-		//Track when AI Dir sets this to max difficult
-		g_AIDir_RandomDiff = 0;
+		//DEBUG: Track Current Difficulty setting
+		g_AIDir_CurrDiff = 1;
 
 		//Set Ambush Chance
 		g_AIDir_AmbushCond_Chance = AID_AmbChance_vlow + AID_AmbChance_pScale;
@@ -8984,10 +9280,10 @@ public AI_Director_SetDifficulty(g_AIDir_TeamStatus, g_AIDir_TeamStatus_max)
 			g_iReinforceTimeSubsequent_AD_Temp = ((g_AIDir_ReinforceTimer_SubOrig + AID_ReinfAdj_low) + AID_ReinfAdj_pScale);
 
 			//Mod specialized bot spawn interval
-			g_fCvar_respawn_delay_team_ins_spec = ((cvarSpecDelay + AID_SpecDelayAdj_low) + AID_SpecDelayAdj_pScale);
+			g_fCvar_respawn_delay_team_ins_spec = ((cvarSpecDelay + AID_SpecDelayAdj_low) + AID_SpecDelayAdj_pScale_Pro);
 
-			//Track when AI Dir sets this to max difficult
-			g_AIDir_RandomDiff = 0;
+			//DEBUG: Track Current Difficulty setting
+			g_AIDir_CurrDiff = 2;
 
 			//Set Ambush Chance
 			g_AIDir_AmbushCond_Chance = AID_AmbChance_low + AID_AmbChance_pScale;
@@ -9001,8 +9297,8 @@ public AI_Director_SetDifficulty(g_AIDir_TeamStatus, g_AIDir_TeamStatus_max)
 			//Mod specialized bot spawn interval
 			g_fCvar_respawn_delay_team_ins_spec = cvarSpecDelay;
 
-			//Track when AI Dir sets this to max difficult
-			g_AIDir_RandomDiff = 0;
+			//DEBUG: Track Current Difficulty setting
+			g_AIDir_CurrDiff = 2;
 
 			//Set Ambush Chance
 			g_AIDir_AmbushCond_Chance = AID_AmbChance_low + AID_AmbChance_pScale;
@@ -9019,10 +9315,12 @@ public AI_Director_SetDifficulty(g_AIDir_TeamStatus, g_AIDir_TeamStatus_max)
 		g_iReinforceTimeSubsequent_AD_Temp = ((g_AIDir_ReinforceTimer_SubOrig - AID_ReinfAdj_med) - AID_ReinfAdj_pScale);
 
 		//Mod specialized bot spawn interval
-		g_fCvar_respawn_delay_team_ins_spec = ((cvarSpecDelay - AID_SpecDelayAdj_med) - AID_SpecDelayAdj_pScale);
+		g_fCvar_respawn_delay_team_ins_spec = ((cvarSpecDelay - AID_SpecDelayAdj_med) - AID_SpecDelayAdj_pScale_Con);
+		if (g_fCvar_respawn_delay_team_ins_spec <= 0)
+			g_fCvar_respawn_delay_team_ins_spec = 1;
 
-		//Track when AI Dir sets this to max difficult
-		g_AIDir_RandomDiff = 0;
+		//DEBUG: Track Current Difficulty setting
+		g_AIDir_CurrDiff = 3;
 
 		//Set Ambush Chance
 		g_AIDir_AmbushCond_Chance = AID_AmbChance_med + AID_AmbChance_pScale;
@@ -9037,10 +9335,12 @@ public AI_Director_SetDifficulty(g_AIDir_TeamStatus, g_AIDir_TeamStatus_max)
 		g_iReinforceTimeSubsequent_AD_Temp = ((g_AIDir_ReinforceTimer_SubOrig - AID_ReinfAdj_med) - AID_ReinfAdj_pScale);
 
 		//Mod specialized bot spawn interval
-		g_fCvar_respawn_delay_team_ins_spec = ((cvarSpecDelay - AID_SpecDelayAdj_high) - AID_SpecDelayAdj_pScale);
+		g_fCvar_respawn_delay_team_ins_spec = ((cvarSpecDelay - AID_SpecDelayAdj_high) - AID_SpecDelayAdj_pScale_Con);
+		if (g_fCvar_respawn_delay_team_ins_spec <= 0)
+			g_fCvar_respawn_delay_team_ins_spec = 1;
 
-		//Track when AI Dir sets this to max difficult
-		g_AIDir_RandomDiff = 0;
+		//DEBUG: Track Current Difficulty setting
+		g_AIDir_CurrDiff = 4;
 
 		//Set Ambush Chance
 		g_AIDir_AmbushCond_Chance = AID_AmbChance_high + AID_AmbChance_pScale;

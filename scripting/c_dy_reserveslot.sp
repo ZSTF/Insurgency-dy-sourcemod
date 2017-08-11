@@ -176,7 +176,7 @@ public Action:OnTimedKickForReject(Handle:timer, any:value)
   GetClientAuthId(clientSlot, AuthId_Steam3, player_authid, sizeof(player_authid));
   LogMessage("kicking rejected player %s [%s]", playername, player_authid);
   
-  KickClient(clientSlot, "%T", "no free slots", clientSlot);
+  KickClient(clientSlot, "%T", "没有更多的空位了", clientSlot);
   return Plugin_Handled;
 }
 
